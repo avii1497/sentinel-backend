@@ -2,7 +2,7 @@
 /* ======================================================
    CORS (NETLIFY FRONTEND → RENDER BACKEND)
    ====================================================== */
-$FRONTEND_ORIGIN = "https://musical-swan-291e56.netlify.app";
+$FRONTEND_ORIGIN = "https://relaxed-tartufo-866a0b.netlify.app";
 
 if (!empty($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] === $FRONTEND_ORIGIN) {
     header("Access-Control-Allow-Origin: $FRONTEND_ORIGIN");
