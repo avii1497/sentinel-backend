@@ -1,0 +1,26 @@
+<?php
+require_once __DIR__ . '/../../cors.php';
+require_once __DIR__ . '/../requireAdmin.php';
+require_once __DIR__ . '/../../Database.php';
+
+$data = json_decode(file_get_contents("php://input"), true);
+
+if (empty($data['type_name'])) {
+  echo json_encode(['success' => false, 'message' => 'Type name required']);
+  exit;
+}
+
+$db = new Database();
+$pdo = $db->getPdo();
+
+$stmt = $pdo->prepare("
+  INSERT INTO listing_types (type_name, description)
+  VALUES (:type_name, :description)
+");
+
+$stmt->execute([
+  ':type_name' => $data['type_name'],
+  ':description' => $data['description'] ?? null
+]);
+
+echo json_encode(['success' => true]);
