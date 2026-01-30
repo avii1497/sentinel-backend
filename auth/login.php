@@ -15,8 +15,8 @@ function getClientIp(): string {
 
 // ✅ Configure session for cross-origin access (React <-> PHP)
 if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.cookie_samesite', 'Lax');   // localhost-friendly
-    ini_set('session.cookie_secure', '0');       // set to 1 when using HTTPS
+    ini_set('session.cookie_samesite', 'None');
+    ini_set('session.cookie_secure', '1');      // set to 1 when using HTTPS
     ini_set('session.cookie_httponly', '1');
     session_start();
 }
