@@ -51,4 +51,3 @@ define('DB_NAME', 'senti_db');   // your local DB name
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
-
