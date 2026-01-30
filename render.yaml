@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: sentinel-backend
+    env: php
+    plan: free
+    routes:
+      - type: rewrite
+        source: /(.*)
+        destination: /$1
