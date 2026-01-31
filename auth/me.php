@@ -4,38 +4,7 @@ require_once __DIR__ . '/../Database.php';
 
 header('Content-Type: application/json');
 
-// --------------------------------------------------------
-// ✅ Production-safe session cookie config
-// - Cross-site frontend (Netlify) calling backend (InfinityFree)
-// - Must use SameSite=None + Secure=true when HTTPS
-// --------------------------------------------------------
 if (session_status() === PHP_SESSION_NONE) {
-
-    $isHttps = (
-        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
-    );
-
-    // ✅ SameSite rules:
-    // - Cross-site XHR needs SameSite=None
-    // - SameSite=None requires Secure=true (browser rule)
-    $sameSite = $isHttps ? 'None' : 'Lax';
-    $secure   = $isHttps ? true : false;
-
-    // Apply params BEFORE session_start
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'secure'   => $secure,
-        'httponly' => true,
-        'samesite' => $sameSite,
-    ]);
-
-    ini_set('session.use_only_cookies', '1');
-    ini_set('session.cookie_httponly', '1');
-    ini_set('session.cookie_secure', $secure ? '1' : '0');
-    ini_set('session.cookie_samesite', $sameSite);
-
     session_start();
 }
 
