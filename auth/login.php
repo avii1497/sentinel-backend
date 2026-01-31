@@ -24,9 +24,13 @@ if (session_status() === PHP_SESSION_NONE) {
 try {
     $db = new Database();
 
+   $payload = $_POST;
+if (empty($payload)) {
     $payload = json_decode(file_get_contents('php://input'), true) ?? [];
-    $email = strtolower(trim($payload['email'] ?? ''));
-    $password = (string)($payload['password'] ?? '');
+}
+
+$email = strtolower(trim((string)($payload['email'] ?? '')));
+$password = (string)($payload['password'] ?? '');
 
     // === Validate Inputs ===
     if (!$email || !$password) {
