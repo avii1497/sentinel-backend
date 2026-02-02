@@ -1,7 +1,12 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy amenities save endpoint.
+// Safe to remove after: 2026-06-30 (if update_property covers amenities).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/property_amenities.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -13,10 +18,7 @@ try {
     requireRole('owner');
     requireCsrf();
 
-    $propertyId = (int)($_POST['property_id'] ?? 0);
-    if ($propertyId <= 0) {
-        throw new Exception("Invalid property_id");
-    }
+    $propertyId = v_int($_POST['property_id'] ?? null, 'property id');
 
     $owner_id = $_SESSION['owner_id'] ?? null;
     if (!$owner_id) {

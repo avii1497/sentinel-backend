@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -13,23 +14,19 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 1️⃣ Try to read from POST (for Android @FormUrlEncoded)
-$email = trim($_POST['email'] ?? '');
-$password = trim($_POST['password'] ?? '');
+$email = $_POST['email'] ?? null;
+$password = $_POST['password'] ?? null;
 
 // 2️⃣ If POST is empty, fall back to JSON body (for React/axios JSON)
-if ($email === '' || $password === '') {
+if ($email === null || $password === null || $email === '' || $password === '') {
     $input = json_decode(file_get_contents("php://input"), true) ?? [];
-    $email    = trim($input['email'] ?? '');
-    $password = trim($input['password'] ?? '');
+    $input = sanitize_array($input);
+    $email    = $input['email'] ?? $email;
+    $password = $input['password'] ?? $password;
 }
 
-if ($email === '' || $password === '') {
-    echo json_encode([
-        "success" => false,
-        "error"   => "Email and password are required"
-    ]);
-    exit;
-}
+$email = v_email($email, 'email');
+$password = v_string($password, 'password', 256);
 
 try {
     $pdo = (new Database())->getPdo();

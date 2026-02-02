@@ -2,13 +2,13 @@
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../requireAdmin.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
-
-if (empty($data['id']) || empty($data['type_name'])) {
-  echo json_encode(['success' => false, 'message' => 'Invalid data']);
-  exit;
-}
+$data = is_array($data) ? sanitize_array($data) : [];
+$id = v_int($data['id'] ?? null, 'id');
+$typeName = v_string($data['type_name'] ?? null, 'type name', 100);
+$description = v_string($data['description'] ?? null, 'description', 500, 0, false);
 
 $db = new Database();
 $pdo = $db->getPdo();
@@ -21,9 +21,9 @@ $stmt = $pdo->prepare("
 ");
 
 $stmt->execute([
-  ':id' => $data['id'],
-  ':type_name' => $data['type_name'],
-  ':description' => $data['description'] ?? null
+  ':id' => $id,
+  ':type_name' => $typeName,
+  ':description' => $description
 ]);
 
 echo json_encode(['success' => true]);

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 header('Content-Type: application/json');
 
 try {
@@ -8,14 +9,10 @@ try {
   requireRole(['customer', 'premium_customer']);
   requireCsrf();
 
-  $propertyId = (int)($_POST['property_id'] ?? 0);
-  $agentId    = (int)($_POST['agent_id'] ?? 0);
-  $message    = trim($_POST['message'] ?? '');
+  $propertyId = v_int($_POST['property_id'] ?? null, 'property id');
+  $agentId    = v_int($_POST['agent_id'] ?? null, 'agent id');
+  $message    = v_string($_POST['message'] ?? null, 'message', 2000);
   $clientId   = (int)$_SESSION['user_id'];
-
-  if ($propertyId <= 0 || $agentId <= 0 || $message === '') {
-    throw new Exception("Invalid input");
-  }
 
   $db = new Database();
   $pdo = $db->getPdo();

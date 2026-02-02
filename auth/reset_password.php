@@ -1,5 +1,10 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Planned forgot-password flow.
+// Safe to remove after: 2026-06-30 (if no reset UI is shipped).
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header('Content-Type: application/json');
 
 if (($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? '') !== 'local') {
@@ -15,17 +20,9 @@ if (($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? '') !== 'local') {
 try {
     // Parse JSON body
     $payload = json_decode(file_get_contents('php://input'), true) ?? [];
-    $email = strtolower(trim($payload['email'] ?? ''));
-    $newPassword = (string)($payload['new_password'] ?? '');
-
-    // === Validation ===
-    if (!$email || !$newPassword) {
-        throw new RuntimeException('Email and new password are required.');
-    }
-
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        throw new RuntimeException('Invalid email format.');
-    }
+    $payload = sanitize_array($payload ?? []);
+    $email = v_email($payload['email'] ?? null, 'email');
+    $newPassword = v_string($payload['new_password'] ?? null, 'new password', 256);
 
     // === Connect to DB ===
     $db = new Database();

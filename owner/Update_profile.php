@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json");
 
@@ -13,17 +14,21 @@ requireRole('owner');
 requireCsrf();
 
 $data = json_decode(file_get_contents("php://input"), true) ?? [];
+$data = sanitize_array($data ?? []);
 
 $db = new Database();
 $pdo = $db->getPdo();
 
 $payloadOwnerId = $data['owner_id'] ?? null;
-$owner_type_id = $data['owner_type_id'] ?? null;
+$owner_type_id = v_int($data['owner_type_id'] ?? null, 'owner type id');
 
 $phone         = $data['phone'] ?? null;
 $address       = $data['address'] ?? null;
 
 $type_fields   = $data['type_fields'] ?? [];
+if (!is_array($type_fields)) {
+    bad_request('type_fields must be an object.');
+}
 
 // Resolve owner_id from session (source of truth)
 $owner_id = $_SESSION['owner_id'] ?? null;
@@ -36,6 +41,9 @@ if (!$owner_id) {
     }
 }
 
+if ($payloadOwnerId !== null) {
+    $payloadOwnerId = v_int($payloadOwnerId, 'owner id', 1, 2147483647, false);
+}
 if ($payloadOwnerId && (int)$payloadOwnerId !== (int)$owner_id) {
     echo json_encode(["success" => false, "error" => "Invalid owner_id"]);
     exit;
@@ -50,6 +58,14 @@ try {
     // ===============================
     // 1. UPDATE Owners base fields
     // ===============================
+    if ($phone === '') $phone = null;
+    if ($address === '') $address = null;
+    if ($phone !== null) {
+        $phone = v_phone($phone, 'phone', true);
+    }
+    if ($address !== null) {
+        $address = v_string($address, 'address', 255, 1, true);
+    }
     $stmt = $pdo->prepare("
         UPDATE owners
         SET owner_type_id = ?, phone = ?, address = ?
@@ -83,6 +99,32 @@ try {
         foreach ($type_fields as $field => $value) {
             if (!in_array($field, $allowedTypeFields, true)) {
                 continue;
+            }
+            if (is_string($value)) {
+                $value = trim($value);
+            }
+            if ($value === '') {
+                $value = null;
+            }
+            if ($value !== null) {
+                switch ($field) {
+                    case 'annual_lease_fee':
+                        $value = v_float($value, 'annual lease fee', 0, 1000000000, true);
+                        break;
+                    case 'co_ownership_percentage':
+                        $value = v_float($value, 'co ownership percentage', 0, 100, true);
+                        break;
+                    case 'is_primary_contact':
+                        $value = v_bool($value, 'is primary contact', true);
+                        break;
+                    case 'lease_expiry_date':
+                    case 'lease_renewal_date':
+                        $value = v_date($value, $field, true);
+                        break;
+                    default:
+                        $value = v_string($value, $field, 255, 0, false);
+                        break;
+                }
             }
             $setParts[] = "$field = ?";
             $values[] = $value;

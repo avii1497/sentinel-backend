@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json");
 
@@ -25,6 +26,7 @@ if ($isMultipart) {
     $src = json_decode(file_get_contents('php://input'), true) ?? [];
     $files = [];
 }
+$src = sanitize_array($src ?? []);
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
 $agentId = $_SESSION['agent_id'] ?? null;
@@ -44,6 +46,9 @@ if (!$agentId) {
 }
 
 $payloadAgentId = $src['agent_id'] ?? null;
+if ($payloadAgentId !== null) {
+    $payloadAgentId = v_int($payloadAgentId, 'agent id', 1, 2147483647, false);
+}
 if ($payloadAgentId && (int)$payloadAgentId !== (int)$agentId) {
     echo json_encode(["success" => false, "error" => "Invalid agent_id."]);
     exit;
@@ -116,8 +121,49 @@ $params = [];
 foreach ($allowed as $field) {
     if (array_key_exists($field, $src)) {
         $value = $src[$field];
-        if (is_string($value)) {
-            $value = trim($value);
+        switch ($field) {
+            case 'commission_rate':
+                $value = v_float($value, 'commission rate', 0, 100, false);
+                break;
+            case 'years_of_experience':
+                $value = v_int($value, 'years of experience', 0, 80, false);
+                break;
+            case 'phone':
+                $value = v_phone($value, 'phone', false);
+                break;
+            case 'whatsapp_number':
+                $value = v_phone($value, 'whatsapp number', false);
+                break;
+            case 'license_no':
+                $value = v_string($value, 'license no', 100, 0, false);
+                break;
+            case 'specialization':
+                $value = v_string($value, 'specialization', 200, 0, false);
+                break;
+            case 'nic':
+                $value = v_string($value, 'nic', 50, 0, false);
+                break;
+            case 'agency':
+                $value = v_string($value, 'agency', 200, 0, false);
+                break;
+            case 'position':
+                $value = v_string($value, 'position', 100, 0, false);
+                break;
+            case 'work_schedule':
+                $value = v_string($value, 'work schedule', 200, 0, false);
+                break;
+            case 'office_address':
+                $value = v_string($value, 'office address', 255, 0, false);
+                break;
+            case 'area_of_operation':
+                $value = v_string($value, 'area of operation', 200, 0, false);
+                break;
+            case 'bio':
+                $value = v_string($value, 'bio', 2000, 0, false);
+                break;
+            default:
+                $value = v_string($value, $field, 255, 0, false);
+                break;
         }
         if ($value === '') {
             $value = null;
@@ -194,10 +240,10 @@ if (
 
 $userUpdates = [];
 if (array_key_exists('first_name', $src)) {
-    $userUpdates['first_name'] = trim((string)$src['first_name']);
+    $userUpdates['first_name'] = v_string($src['first_name'], 'first name', 100, 1, false);
 }
 if (array_key_exists('last_name', $src)) {
-    $userUpdates['last_name'] = trim((string)$src['last_name']);
+    $userUpdates['last_name'] = v_string($src['last_name'], 'last name', 100, 1, false);
 }
 
 if (empty($set) && empty($userUpdates)) {

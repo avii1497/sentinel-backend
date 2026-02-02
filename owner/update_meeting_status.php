@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/mailer.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -11,33 +12,8 @@ requireLogin();
 requireRole('owner');
 requireCsrf();
 
-$meeting_id = $_POST['meeting_id'] ?? null;
-$status     = $_POST['status']     ?? null;   // 'accepted', 'declined', 'cancelled'
-
-if (!$meeting_id || !$status) {
-    echo json_encode([
-        "success" => false,
-        "error"   => "Missing meeting_id or status"
-    ]);
-    exit;
-}
-
-if (!is_numeric($meeting_id)) {
-    echo json_encode([
-        "success" => false,
-        "error"   => "Invalid IDs"
-    ]);
-    exit;
-}
-
-$allowed = ['pending','accepted','declined','cancelled','completed'];
-if (!in_array($status, $allowed, true)) {
-    echo json_encode([
-        "success" => false,
-        "error"   => "Invalid status value"
-    ]);
-    exit;
-}
+$meeting_id = v_int($_POST['meeting_id'] ?? null, 'meeting id');
+$status     = v_enum($_POST['status'] ?? null, 'status', ['pending','accepted','declined','cancelled','completed']);
 
 try {
     $pdo = (new Database())->getPdo();

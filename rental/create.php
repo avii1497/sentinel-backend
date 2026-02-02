@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy rental creation endpoint.
+// Safe to remove after: 2026-06-30 (if rentals are created elsewhere).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) {
@@ -15,12 +20,13 @@ try {
     $tenantId = (int)$_SESSION['user_id'];
 
     $input = json_decode(file_get_contents('php://input'), true);
+    $input = sanitize_array($input ?? []);
 
-    $propertyId = $input['property_id'] ?? null;
-    $rentalType = $input['rental_type'] ?? null;
-    $checkin    = $input['checkin'] ?? null;
-    $checkout   = $input['checkout'] ?? null;
-    $guests     = (int)($input['guests'] ?? 1);
+    $propertyId = v_int($input['property_id'] ?? null, 'property id');
+    $rentalType = v_enum($input['rental_type'] ?? null, 'rental type', ['short_term','long_term','corporate','hotel']);
+    $checkin    = v_date($input['checkin'] ?? null, 'checkin');
+    $checkout   = v_date($input['checkout'] ?? null, 'checkout');
+    $guests     = v_int($input['guests'] ?? 1, 'guests', 1, 50, false) ?? 1;
 
     if (!$propertyId || !$rentalType || !$checkin || !$checkout) {
         throw new Exception("Missing booking data");

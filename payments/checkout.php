@@ -3,6 +3,7 @@ require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/env.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
@@ -26,7 +27,10 @@ try {
     $customer_id = (int)$_SESSION['user_id'];
 
     $input = json_decode(file_get_contents("php://input"), true) ?? [];
-    $reservation_id = $input['reservation_id'] ?? null;
+    $input = sanitize_array($input ?? []);
+    $reservationRaw = $input['reservation_id'] ?? null;
+    if ($reservationRaw === '') $reservationRaw = null;
+    $reservation_id = v_int($reservationRaw, 'reservation id', 1, 2147483647, false);
 
     $db = new Database();
     $pdo = $db->getPdo();
@@ -37,7 +41,7 @@ try {
     }
     Stripe::setApiKey($stripeSecret);
 
-    if ($reservation_id && is_numeric($reservation_id)) {
+    if ($reservation_id) {
         $stmt = $pdo->prepare("
             SELECT r.*, p.title, p.id AS property_id
             FROM property_reservations r

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -21,16 +22,17 @@ try {
     if (!is_array($input)) {
         $input = [];
     }
+    $input = sanitize_array($input);
 
-    $propertyId = (int)($input['property_id'] ?? 0);
+    $propertyId = v_int($input['property_id'] ?? null, 'property id');
     $rentalType = $input['rental_type'] ?? null;
     if ($rentalType === 'holiday') {
         $rentalType = 'hotel';
     }
-    $checkin    = $input['checkin'] ?? null;
-    $checkout   = $input['checkout'] ?? null;
-    $guests     = (int)($input['guests'] ?? 1);
-    if ($guests <= 0) $guests = 1;
+    $rentalType = v_enum($rentalType, 'rental type', ['short_term', 'long_term', 'corporate', 'hotel']);
+    $checkin    = v_date($input['checkin'] ?? null, 'checkin');
+    $checkout   = v_date($input['checkout'] ?? null, 'checkout');
+    $guests     = v_int($input['guests'] ?? 1, 'guests', 1, 50, false) ?? 1;
 
     if (!$propertyId || !$rentalType || !$checkin || !$checkout) {
         throw new Exception("Missing booking data");

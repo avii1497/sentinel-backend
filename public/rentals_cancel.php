@@ -3,6 +3,7 @@ require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/env.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 use Stripe\Stripe;
 use Stripe\Checkout\Session as StripeSession;
@@ -24,11 +25,10 @@ try {
 
     $input = json_decode(file_get_contents('php://input'), true);
     if (!is_array($input)) $input = [];
+    $input = sanitize_array($input);
 
-    $bookingId = (int)($input['booking_id'] ?? ($_POST['booking_id'] ?? 0));
-    if ($bookingId <= 0) json_error("Invalid booking_id");
-
-    $reason = trim((string)($input['reason'] ?? ($_POST['reason'] ?? '')));
+    $bookingId = v_int($input['booking_id'] ?? ($_POST['booking_id'] ?? null), 'booking id');
+    $reason = v_string($input['reason'] ?? ($_POST['reason'] ?? ''), 'reason', 500, 0, false);
     $reason = $reason !== '' ? $reason : null;
 
     $pdo = (new Database())->getPdo();

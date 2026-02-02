@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy document approval flow.
+// Safe to remove after: 2026-06-30 (confirm no admin workflow uses it).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -11,8 +16,7 @@ try {
         throw new Exception("Unauthorized");
     }
 
-    $property_id = $_POST['property_id'] ?? null;
-    if (!$property_id) throw new Exception("Missing property_id");
+    $property_id = v_int($_POST['property_id'] ?? null, 'property id');
 
     $db = new Database();
     $pdo = $db->getPdo();

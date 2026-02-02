@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/env.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 use Stripe\Stripe;
 use Stripe\Webhook;
@@ -42,10 +43,9 @@ $metadata = $session->metadata ?? null;
 $type     = $metadata->type ?? null;
 
 if (!$type) {
-    error_log("âš ï¸ Missing metadata.type");
-    http_response_code(200);
-    exit;
+    bad_request('type is required.');
 }
+$type = v_string($type, 'type', 50);
 
 $pdo = (new Database())->getPdo();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -122,8 +122,9 @@ function markPaid(PDO $pdo, string $stripeSessionId, string $type, int $refId, f
 // ==============================
 if ($type === 'rental_booking') {
 
-    $booking_id = (int)($metadata->booking_id ?? 0);
-    $amount = ($session->amount_total ?? 0) / 100;
+    $booking_id = v_int($metadata->booking_id ?? null, 'booking id');
+    $amountCents = v_int($session->amount_total ?? null, 'amount total', 1, 100000000000);
+    $amount = $amountCents / 100;
 
     if (!$booking_id || $amount <= 0) {
         error_log("âŒ Invalid rental payload");
@@ -160,9 +161,10 @@ if ($type === 'rental_booking') {
 // ==============================
 if ($type === 'property_reservation') {
 
-    $reservation_id = (int)($metadata->reservation_id ?? 0);
-    $property_id    = (int)($metadata->property_id ?? 0);
-    $amount = ($session->amount_total ?? 0) / 100;
+    $reservation_id = v_int($metadata->reservation_id ?? null, 'reservation id');
+    $property_id    = v_int($metadata->property_id ?? null, 'property id');
+    $amountCents = v_int($session->amount_total ?? null, 'amount total', 1, 100000000000);
+    $amount = $amountCents / 100;
 
     if (!$reservation_id || !$property_id || $amount <= 0) {
         http_response_code(200);
@@ -285,8 +287,9 @@ if ($type === 'property_reservation') {
 // ==============================
 if ($type === 'premium_upgrade') {
 
-    $user_id = (int)($metadata->user_id ?? 0);
-    $amount = ($session->amount_total ?? 0) / 100;
+    $user_id = v_int($metadata->user_id ?? null, 'user id');
+    $amountCents = v_int($session->amount_total ?? null, 'amount total', 1, 100000000000);
+    $amount = $amountCents / 100;
 
     if (!$user_id || $amount <= 0) {
         http_response_code(200);
@@ -323,12 +326,8 @@ if ($type === 'premium_upgrade') {
 // ==============================
 if ($type === 'property_reservation_refund') {
 
-    $reservation_id = (int)($metadata->reservation_id ?? 0);
-
-    if (!$reservation_id || empty($session->payment_intent)) {
-        http_response_code(200);
-        exit;
-    }
+    $reservation_id = v_int($metadata->reservation_id ?? null, 'reservation id');
+    $paymentIntent = v_string($session->payment_intent ?? null, 'payment intent', 200);
 
     try {
         $pdo->beginTransaction();
@@ -365,7 +364,7 @@ if ($type === 'property_reservation_refund') {
 
         // 🔁 Issue Stripe refund
         Refund::create([
-            'payment_intent' => $session->payment_intent,
+            'payment_intent' => $paymentIntent,
         ]);
 
         // ✅ Mark refund as processed

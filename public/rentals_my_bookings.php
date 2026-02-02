@@ -1,4 +1,8 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy bookings listing endpoint.
+// Safe to remove after: 2026-06-30 (customer bookings now use /customer/*).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 

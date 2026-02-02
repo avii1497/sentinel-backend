@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/mailer.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -10,33 +11,16 @@ requireLogin();
 requireRole('agent');
 requireCsrf();
 
-function isValidDate($date) {
-    $d = DateTime::createFromFormat('Y-m-d', $date);
-    return $d && $d->format('Y-m-d') === $date;
-}
-
-function isValidTime($time) {
-    return (bool)preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/', $time);
-}
-
 try {
     $agent_id   = (int)($_SESSION['agent_id'] ?? 0);
-    $booking_id = $_POST['booking_id'] ?? null;
+    $booking_id = v_int($_POST['booking_id'] ?? null, 'booking id');
 
-    $meeting_date = $_POST['meeting_date'] ?? null;
-    $start_time   = $_POST['start_time'] ?? null;
-    $end_time     = $_POST['end_time'] ?? null;
+    $meeting_date = v_date($_POST['meeting_date'] ?? null, 'meeting date');
+    $start_time   = v_time($_POST['start_time'] ?? null, 'start time');
+    $end_time     = v_time($_POST['end_time'] ?? null, 'end time');
 
-    $title       = trim($_POST['title'] ?? 'Rental Visit');
-    $description = trim($_POST['description'] ?? '');
-
-    if (!$booking_id || !$meeting_date || !$start_time || !$end_time) {
-        throw new Exception("Missing required fields.");
-    }
-
-    if (!isValidDate($meeting_date) || !isValidTime($start_time) || !isValidTime($end_time)) {
-        throw new Exception("Invalid date or time format.");
-    }
+    $title       = v_string($_POST['title'] ?? 'Rental Visit', 'title', 200, 0, false);
+    $description = v_string($_POST['description'] ?? '', 'description', 2000, 0, false);
 
     if (strlen($start_time) === 5) $start_time .= ":00";
     if (strlen($end_time) === 5)   $end_time   .= ":00";

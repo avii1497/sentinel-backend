@@ -1,15 +1,13 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json; charset=UTF-8");
 
 try {
     $data = json_decode(file_get_contents("php://input"), true);
-    $property_id = isset($data['property_id']) ? (int)$data['property_id'] : 0;
-
-    if ($property_id <= 0) {
-        throw new Exception("Missing or invalid property_id");
-    }
+    $data = sanitize_array($data ?? []);
+    $property_id = v_int($data['property_id'] ?? null, 'property id');
 
     $db = new Database();
     $pdo = $db->getPdo();

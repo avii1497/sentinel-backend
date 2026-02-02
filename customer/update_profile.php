@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -19,6 +20,7 @@ if ($isMultipart) {
     $profile = $payload['profile'] ?? [];
     $files = [];
 }
+$profile = sanitize_array(is_array($profile) ? $profile : []);
 
 $db = new Database();
 $pdo = $db->getPdo();
@@ -38,9 +40,28 @@ $userParams = [':id' => $userId];
 
 foreach ($userFields as $field) {
     if (array_key_exists($field, $profile)) {
-        $value = is_string($profile[$field]) ? trim($profile[$field]) : $profile[$field];
+        $value = $profile[$field];
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+        if ($value === '') {
+            $value = null;
+        }
+        if ($value !== null) {
+            switch ($field) {
+                case 'email':
+                    $value = v_email($value, 'email');
+                    break;
+                case 'phone':
+                    $value = v_phone($value, 'phone', true);
+                    break;
+                default:
+                    $value = v_string($value, $field, 100, 1, true);
+                    break;
+            }
+        }
         $userUpdates[] = "`$field` = :$field";
-        $userParams[":$field"] = $value === '' ? null : $value;
+        $userParams[":$field"] = $value;
     }
 }
 
@@ -49,15 +70,27 @@ $customerParams = [':user_id' => $userId];
 
 foreach ($customerFields as $field) {
     if (array_key_exists($field, $profile)) {
-        $value = is_string($profile[$field]) ? trim($profile[$field]) : $profile[$field];
-        if (in_array($field, ['budget_min', 'budget_max'], true)) {
-            $value = $value === '' ? null : (float)$value;
+        $value = $profile[$field];
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+        if ($value === '') {
+            $value = null;
+        }
+        if ($value !== null) {
+            if (in_array($field, ['budget_min', 'budget_max'], true)) {
+                $value = v_float($value, $field, 0, 1000000000, true);
+            } elseif ($field === 'preferred_city') {
+                $value = v_string($value, 'preferred city', 100, 1, true);
+            } elseif ($field === 'notes') {
+                $value = v_string($value, 'notes', 1000, 0, false);
+            }
         }
         if ($field === 'profile_photo') {
             continue;
         }
         $customerUpdates[] = "`$field` = :$field";
-        $customerParams[":$field"] = $value === '' ? null : $value;
+        $customerParams[":$field"] = $value;
     }
 }
 

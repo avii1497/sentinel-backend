@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../config/env.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
@@ -34,11 +35,9 @@ $input = json_decode(file_get_contents("php://input"), true);
 if (!is_array($input)) {
     json_error("Invalid JSON body");
 }
+$input = sanitize_array($input);
 
-$booking_id = (int)($input['booking_id'] ?? 0);
-if ($booking_id <= 0) {
-    json_error("Invalid booking_id");
-}
+$booking_id = v_int($input['booking_id'] ?? null, 'booking id');
 
 /* =========================
    DB

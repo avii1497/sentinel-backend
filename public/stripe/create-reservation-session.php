@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../config/env.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
@@ -26,13 +27,13 @@ try {
 
     // Input
     $input = json_decode(file_get_contents("php://input"), true);
-    $reservation_id = $input['reservation_id']
-        ?? ($_POST['reservation_id'] ?? null)
-        ?? ($_GET['reservation_id'] ?? null);
-
-    if (!$reservation_id || !is_numeric($reservation_id)) {
-        throw new Exception("Invalid reservation_id");
-    }
+    $input = sanitize_array($input ?? []);
+    $reservation_id = v_int(
+        $input['reservation_id']
+            ?? ($_POST['reservation_id'] ?? null)
+            ?? ($_GET['reservation_id'] ?? null),
+        'reservation id'
+    );
 
     $db = new Database();
     $pdo = $db->getPdo();

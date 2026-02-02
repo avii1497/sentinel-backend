@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header("Content-Type: application/json");
 
@@ -16,13 +17,10 @@ try {
     $customer_id = (int)$_SESSION['user_id'];
 
     $input = json_decode(file_get_contents("php://input"), true);
+    $input = sanitize_array($input ?? []);
 
-    $offer_id    = $input['offer_id'] ?? null;
-    $property_id = $input['property_id'] ?? null;
-
-    if (!$offer_id || !is_numeric($offer_id) || !$property_id || !is_numeric($property_id)) {
-        throw new Exception("Missing data");
-    }
+    $offer_id    = v_int($input['offer_id'] ?? null, 'offer id');
+    $property_id = v_int($input['property_id'] ?? null, 'property id');
 
     $db = new Database();
     $pdo = $db->getPdo();

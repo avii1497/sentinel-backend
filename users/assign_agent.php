@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy admin user-agent assignment.
+// Safe to remove after: 2026-06-30 (if no admin tool uses it).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header('Content-Type: application/json');
 
 requireLogin();
@@ -9,12 +14,9 @@ requireCsrf();
 
 try {
     $data = json_decode(file_get_contents("php://input"), true);
-    $payloadOwnerId = isset($data['owner_id']) ? (int)$data['owner_id'] : 0;
-    $agentId = isset($data['agent_id']) ? (int)$data['agent_id'] : 0;
-
-    if ($agentId <= 0) {
-        throw new RuntimeException("Invalid owner_id or agent_id");
-    }
+    $data = sanitize_array($data ?? []);
+    $payloadOwnerId = v_int($data['owner_id'] ?? null, 'owner id', 1, 2147483647, false) ?? 0;
+    $agentId = v_int($data['agent_id'] ?? null, 'agent id');
 
     $db = new Database();
     $pdo = $db->getPdo();

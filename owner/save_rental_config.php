@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy rental config save endpoint.
+// Safe to remove after: 2026-06-30 (rental packages now use /rental/save_rental_package.php).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -21,12 +26,12 @@ try {
     if (!is_array($payload)) {
         throw new Exception("Invalid JSON payload");
     }
+    $payload = sanitize_array($payload ?? []);
 
-    $propertyId = (int) ($payload['property_id'] ?? 0);
+    $propertyId = v_int($payload['property_id'] ?? null, 'property id');
     $rentalConfig = $payload['rental_config'] ?? [];
-
-    if ($propertyId <= 0) {
-        throw new Exception("property_id is required");
+    if (!is_array($rentalConfig)) {
+        bad_request('rental_config must be an object.');
     }
 
     $pdo = (new Database())->getPdo();
@@ -75,22 +80,49 @@ try {
         if (!in_array($type, $allowedTypes, true)) {
             continue;
         }
+        if (!is_array($cfg)) {
+            continue;
+        }
+        $cfg = sanitize_array($cfg);
 
-        $isActive = !empty($cfg['is_active']) ? 1 : 0;
+        $isActive = v_bool($cfg['is_active'] ?? 0, 'is active', false) ?? 0;
         if ($isActive) {
             $activeCount++;
         }
 
+        $priceNightlyRaw = $cfg['price_nightly'] ?? null;
+        if ($priceNightlyRaw === '') $priceNightlyRaw = null;
+        $priceDailyRaw = $cfg['price_daily'] ?? null;
+        if ($priceDailyRaw === '') $priceDailyRaw = null;
+        $priceMonthlyRaw = $cfg['price_monthly'] ?? null;
+        if ($priceMonthlyRaw === '') $priceMonthlyRaw = null;
+        $priceYearlyRaw = $cfg['price_yearly'] ?? null;
+        if ($priceYearlyRaw === '') $priceYearlyRaw = null;
+        $minStayRaw = $cfg['min_stay_nights'] ?? null;
+        if ($minStayRaw === '') $minStayRaw = null;
+        $maxStayRaw = $cfg['max_stay_nights'] ?? null;
+        if ($maxStayRaw === '') $maxStayRaw = null;
+        $maxGuestsRaw = $cfg['max_guests'] ?? null;
+        if ($maxGuestsRaw === '') $maxGuestsRaw = null;
+
+        $priceNightly = v_float($priceNightlyRaw, 'price nightly', 0, 1000000000, false);
+        $priceDaily = v_float($priceDailyRaw, 'price daily', 0, 1000000000, false);
+        $priceMonthly = v_float($priceMonthlyRaw, 'price monthly', 0, 1000000000, false);
+        $priceYearly = v_float($priceYearlyRaw, 'price yearly', 0, 1000000000, false);
+        $minStay = v_int($minStayRaw, 'min stay nights', 0, 3650, false);
+        $maxStay = v_int($maxStayRaw, 'max stay nights', 0, 3650, false);
+        $maxGuests = v_int($maxGuestsRaw, 'max guests', 0, 1000, false);
+
         $insert->execute([
             $propertyId,
             $type,
-            $cfg['price_nightly'] ?? null,
-            $cfg['price_daily'] ?? null,
-            $cfg['price_monthly'] ?? null,
-            $cfg['price_yearly'] ?? null,
-            $cfg['min_stay_nights'] ?? null,
-            $cfg['max_stay_nights'] ?? null,
-            $cfg['max_guests'] ?? null,
+            $priceNightly,
+            $priceDaily,
+            $priceMonthly,
+            $priceYearly,
+            $minStay,
+            $maxStay,
+            $maxGuests,
             $isActive
         ]);
     }

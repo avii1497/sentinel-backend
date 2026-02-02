@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../../config/env.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Firebase\JWT\JWT;
@@ -9,8 +10,8 @@ use Firebase\JWT\Key;
    ADMIN JWT CONFIG
 ========================== */
 
-define('ADMIN_JWT_SECRET', getenv('ADMIN_JWT_SECRET') ?: 'SENTINEL_ADMIN_SECRET_2025');
-define('ADMIN_JWT_TTL', (int)(getenv('ADMIN_JWT_TTL') ?: (60 * 60 * 6))); // 6 hours
+define('ADMIN_JWT_SECRET', $_ENV['ADMIN_JWT_SECRET'] ?? getenv('ADMIN_JWT_SECRET') ?? '');
+define('ADMIN_JWT_TTL', (int)(($_ENV['ADMIN_JWT_TTL'] ?? getenv('ADMIN_JWT_TTL') ?? (60 * 60 * 6)))); // 6 hours
 
 /* ==========================
    TOKEN CREATION

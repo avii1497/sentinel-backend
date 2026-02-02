@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy agent rental cancellation flow.
+// Safe to remove after: 2026-06-30 (confirm no external clients use it).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -18,12 +23,10 @@ try {
 
     $input = json_decode(file_get_contents('php://input'), true);
     if (!is_array($input)) $input = [];
+    $input = sanitize_array($input);
 
-    $bookingId = (int)($input['booking_id'] ?? ($_POST['booking_id'] ?? 0));
-    if ($bookingId <= 0) json_error("Invalid booking_id");
-
-    $reason = trim((string)($input['reason'] ?? ($_POST['reason'] ?? '')));
-    $reason = $reason !== '' ? $reason : null;
+    $bookingId = v_int($input['booking_id'] ?? ($_POST['booking_id'] ?? null), 'booking id');
+    $reason = v_string($input['reason'] ?? ($_POST['reason'] ?? null), 'reason', 500, 0, false);
 
     $pdo = (new Database())->getPdo();
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

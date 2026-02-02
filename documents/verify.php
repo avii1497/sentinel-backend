@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy document verification endpoint.
+// Safe to remove after: 2026-06-30 (agent verification now uses /agent/documents/*).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -12,11 +17,8 @@ try {
     }
 
     $input = json_decode(file_get_contents("php://input"), true);
-    $document_id = $input['document_id'] ?? null;
-
-    if (!$document_id || !is_numeric($document_id)) {
-        throw new Exception("Invalid document_id");
-    }
+    $input = sanitize_array($input ?? []);
+    $document_id = v_int($input['document_id'] ?? null, 'document id');
 
     $db = new Database();
     $pdo = $db->getPdo();

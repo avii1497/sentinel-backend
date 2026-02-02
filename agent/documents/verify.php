@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header("Content-Type: application/json");
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -11,11 +12,8 @@ try {
     }
 
     $data = json_decode(file_get_contents("php://input"), true);
-    $doc_id = (int)($data['document_id'] ?? 0);
-
-    if ($doc_id <= 0) {
-        throw new Exception("Missing document_id");
-    }
+    $data = sanitize_array($data ?? []);
+    $doc_id = v_int($data['document_id'] ?? null, 'document id');
 
     $pdo = (new Database())->getPdo();
 

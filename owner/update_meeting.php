@@ -1,29 +1,22 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy meeting update endpoint.
+// Safe to remove after: 2026-06-30 (use /owner/update_meeting_status.php).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json");
 
 try {
-    $meeting_id = $_POST['meeting_id'] ?? null;
-    $status     = $_POST['status'] ?? null; // 'accepted','declined','cancelled','completed'
+    $meeting_id = v_int($_POST['meeting_id'] ?? null, 'meeting id');
+    $status     = v_enum($_POST['status'] ?? null, 'status', ['accepted','declined','cancelled','completed']);
 
     if (session_status() === PHP_SESSION_NONE) session_start();
 
     requireLogin();
     requireRole('owner');
     requireCsrf();
-
-    if (!$meeting_id || !$status) {
-        throw new Exception("Missing required fields.");
-    }
-    if (!is_numeric($meeting_id)) {
-        throw new Exception("Invalid IDs.");
-    }
-
-    $allowed = ['accepted','declined','cancelled','completed'];
-    if (!in_array($status, $allowed, true)) {
-        throw new Exception("Invalid status value.");
-    }
 
     $pdo = (new Database())->getPdo();
 

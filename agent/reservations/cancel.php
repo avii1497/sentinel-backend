@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../Database.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../config/env.php';
 require_once __DIR__ . '/../../lib/mailer.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
@@ -25,11 +26,10 @@ try {
 
     $input = json_decode(file_get_contents('php://input'), true);
     if (!is_array($input)) $input = [];
+    $input = sanitize_array($input);
 
-    $reservationId = (int)($input['reservation_id'] ?? ($_POST['reservation_id'] ?? 0));
-    $reason = trim((string)($input['reason'] ?? ($_POST['reason'] ?? 'not_interested')));
-
-    if ($reservationId <= 0) json_error('Invalid reservation_id');
+    $reservationId = v_int($input['reservation_id'] ?? ($_POST['reservation_id'] ?? null), 'reservation id');
+    $reason = v_string($input['reason'] ?? ($_POST['reason'] ?? 'not_interested'), 'reason', 500, 0, false);
 
     $pdo = (new Database())->getPdo();
 

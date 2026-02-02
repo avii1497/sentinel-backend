@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy public offer status update.
+// Safe to remove after: 2026-06-30 (status updates now use /agent/offers/update_status.php).
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -14,18 +19,11 @@ try {
     requireCsrf();
 
     $input = json_decode(file_get_contents("php://input"), true);
-    $offer_id = $input['offer_id'] ?? null;
-    $status   = $input['status'] ?? null;
+    $input = sanitize_array($input ?? []);
+    $offer_id = v_int($input['offer_id'] ?? null, 'offer id');
+    $status   = v_enum($input['status'] ?? null, 'status', ['accepted','rejected','countered']);
     $counter  = $input['counter_price'] ?? null;
-    $message  = $input['message'] ?? null;
-
-    if (!$offer_id || !is_numeric($offer_id)) {
-        throw new Exception('Invalid offer');
-    }
-
-    if (!in_array($status, ['accepted','rejected','countered'], true)) {
-        throw new Exception('Invalid status');
-    }
+    $message  = v_string($input['message'] ?? '', 'message', 2000, 0, false);
 
     $db = new Database();
     $pdo = $db->getPdo();
@@ -135,9 +133,7 @@ try {
     $pdo->beginTransaction();
 
     if ($status === 'countered') {
-        if (!$counter || !is_numeric($counter)) {
-            throw new Exception('Counter price required');
-        }
+        $counter = v_float($counter, 'counter price', 0.01, 1000000000);
         if ((float)$counter < (float)$offer['listed_price']) {
             throw new Exception('Counter offer must be at least the listed price');
         }

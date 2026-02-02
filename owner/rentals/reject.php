@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/owner_guard.php';
 require_once __DIR__ . '/../../lib/mailer.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -12,11 +13,11 @@ function json_error(string $msg, int $code = 400): void {
 }
 
 $input = json_decode(file_get_contents("php://input"), true);
-$bookingId = (int)($input['booking_id'] ?? ($_POST['booking_id'] ?? $_GET['booking_id'] ?? 0));
-
-if (!$bookingId) {
-    json_error("Missing booking_id", 400);
-}
+$input = sanitize_array($input ?? []);
+$bookingId = v_int(
+    $input['booking_id'] ?? ($_POST['booking_id'] ?? $_GET['booking_id'] ?? null),
+    'booking id'
+);
 
 try {
     requireCsrf();

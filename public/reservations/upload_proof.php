@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy reservation proof upload.
+// Safe to remove after: 2026-06-30 (if uploads are handled elsewhere).
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -12,9 +17,7 @@ try {
     requireCsrf();
 
     $customer_id = (int)$_SESSION['user_id'];
-    $reservation_id = $_POST['reservation_id'] ?? null;
-
-    if (!$reservation_id || !is_numeric($reservation_id)) throw new Exception("Invalid reservation_id");
+    $reservation_id = v_int($_POST['reservation_id'] ?? null, 'reservation id');
     if (empty($_FILES['proof'])) throw new Exception("No file uploaded");
 
     $db = new Database();

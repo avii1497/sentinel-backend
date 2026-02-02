@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json; charset=UTF-8");
 
 try {
@@ -10,18 +11,11 @@ try {
     // 🧠 Read inputs
     // --------------------------------------
     $input = json_decode(file_get_contents("php://input"), true);
+    $input = sanitize_array(is_array($input) ? $input : []);
 
-    $message = $input['message'] ?? '';
-    $mode = $input['mode'] ?? 'general';
-    $propertyId = $input['property_id'] ?? null;
-
-    if (!$message) {
-        echo json_encode([
-            "success" => false,
-            "error" => "No message provided."
-        ]);
-        exit;
-    }
+    $message = v_string($input['message'] ?? null, 'message', 4000);
+    $mode = v_enum($input['mode'] ?? 'general', 'mode', ['general', 'search', 'investment', 'property_chat'], false) ?? 'general';
+    $propertyId = v_int($input['property_id'] ?? null, 'property id', 1, 2147483647, false);
 
     // --------------------------------------
     // 🌐 Detect base URL (same as your code)

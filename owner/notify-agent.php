@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/mailer.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json");
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -13,9 +14,8 @@ try {
 
   $owner_user_id = (int)$_SESSION['user_id'];
   $input = json_decode(file_get_contents("php://input"), true);
-  $reservation_id = (int)($input['reservation_id'] ?? 0);
-
-  if (!$reservation_id) throw new Exception("Missing reservation_id");
+  $input = sanitize_array($input ?? []);
+  $reservation_id = v_int($input['reservation_id'] ?? null, 'reservation id');
 
   $pdo = (new Database())->getPdo();
 

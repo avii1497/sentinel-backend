@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header('Content-Type: application/json');
 
 try {
@@ -18,12 +19,13 @@ try {
         $src = $payload;
         $files = [];
     }
+    $src = sanitize_array($src ?? []);
 
     // ---------- Read core fields ----------
-    $firstName = trim((string)($src['first_name'] ?? ''));
-    $lastName  = trim((string)($src['last_name'] ?? ''));
-    $email     = strtolower(trim((string)($src['email'] ?? '')));
-    $password  = (string)($src['password'] ?? '');
+    $firstName = v_string($src['first_name'] ?? null, 'first name', 100);
+    $lastName  = v_string($src['last_name'] ?? null, 'last name', 100);
+    $email     = v_email($src['email'] ?? null, 'email');
+    $password  = v_string($src['password'] ?? null, 'password', 256);
     $role      = (string)($src['role'] ?? 'customer');
     $roleData  = $src['roleData'] ?? [];
     if (is_string($roleData)) {
@@ -32,20 +34,11 @@ try {
     } elseif (!is_array($roleData)) {
         $roleData = [];
     }
-
-    // ---------- Validation ----------
-    if ($firstName === '' || $lastName === '' || $email === '' || $password === '') {
-        throw new RuntimeException('All required fields are required.');
-    }
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        throw new RuntimeException('Invalid email format.');
-    }
+    $roleData = sanitize_array($roleData ?? []);
 
     // Premium customer removed from registration
     $validRoles = ['customer', 'owner', 'agent']; // CHANGED
-    if (!in_array($role, $validRoles, true)) {
-        throw new RuntimeException('Invalid role provided.');
-    }
+    $role = v_enum($role, 'role', $validRoles);
 
     // Duplicate email
     $existingUser = $db->getUserByEmail($email);
@@ -174,6 +167,44 @@ try {
         $ownerProfilePicPath = 'uploads/owners/photos/' . $name;
     }
 
+    $agentData = [];
+    $ownerData = [];
+    $customerData = [];
+
+    if ($role === 'agent') {
+        $agentData = [
+            'license_no'          => v_string($roleData['license_no'] ?? null, 'license no', 100, 0, false),
+            'specialization'      => v_string($roleData['specialization'] ?? null, 'specialization', 200, 0, false),
+            'commission_rate'     => v_float($roleData['commission_rate'] ?? null, 'commission rate', 0, 100, false),
+            'phone'               => v_phone($roleData['phone'] ?? null, 'phone', false),
+            'nic'                 => v_string($roleData['nic'] ?? null, 'nic', 50, 0, false),
+            'agency'              => v_string($roleData['agency'] ?? null, 'agency', 200, 0, false),
+            'position'            => v_string($roleData['position'] ?? null, 'position', 100, 0, false),
+            'years_of_experience' => v_int($roleData['years_of_experience'] ?? null, 'years of experience', 0, 80, false),
+            'work_schedule'       => v_string($roleData['work_schedule'] ?? null, 'work schedule', 200, 0, false),
+            'status'              => v_string($roleData['status'] ?? 'Active', 'status', 20, 1, false),
+            'office_address'      => v_string($roleData['office_address'] ?? null, 'office address', 255, 0, false),
+            'whatsapp_number'     => v_phone($roleData['whatsapp_number'] ?? null, 'whatsapp number', false),
+            'area_of_operation'   => v_string($roleData['area_of_operation'] ?? null, 'area of operation', 200, 0, false),
+            'bio'                 => v_string($roleData['bio'] ?? null, 'bio', 2000, 0, false),
+        ];
+    } elseif ($role === 'owner') {
+        $ownerData = [
+            'company_name'  => v_string($roleData['company_name'] ?? null, 'company name', 200, 0, false),
+            'business_type' => v_string($roleData['business_type'] ?? null, 'business type', 100, 0, false),
+            'tax_id'        => v_string($roleData['tax_id'] ?? null, 'tax id', 50, 0, false),
+            'phone'         => v_phone($roleData['phone'] ?? null, 'phone', false),
+            'address'       => v_string($roleData['address'] ?? null, 'address', 255, 0, false),
+        ];
+    } else {
+        $customerData = [
+            'preferred_city' => v_string($roleData['preferred_city'] ?? null, 'preferred city', 100, 0, false),
+            'budget_min'     => v_float($roleData['budget_min'] ?? null, 'budget min', 0, 1000000000, false),
+            'budget_max'     => v_float($roleData['budget_max'] ?? null, 'budget max', 0, 1000000000, false),
+            'notes'          => v_string($roleData['notes'] ?? null, 'notes', 1000, 0, false),
+        ];
+    }
+
     // ---------- Role specific inserts ----------
     switch ($role) {
         case 'agent':
@@ -192,22 +223,22 @@ try {
             ");
             $stmt->execute([
                 ':user_id'             => $userId,
-                ':license_no'          => $roleData['license_no'] ?? null,
-                ':specialization'      => $roleData['specialization'] ?? null,
-                ':commission_rate'     => $roleData['commission_rate'] ?? null,
-                ':phone'               => $roleData['phone'] ?? null,
+                ':license_no'          => $agentData['license_no'] ?? null,
+                ':specialization'      => $agentData['specialization'] ?? null,
+                ':commission_rate'     => $agentData['commission_rate'] ?? null,
+                ':phone'               => $agentData['phone'] ?? null,
                 ':profile_photo'       => $agentProfilePhotoPath,
                 ':cv_file'             => $agentCvFilePath,
-                ':nic'                 => $roleData['nic'] ?? null,
-                ':agency'              => $roleData['agency'] ?? null,
-                ':position'            => $roleData['position'] ?? null,
-                ':years_of_experience' => $roleData['years_of_experience'] ?? null,
-                ':work_schedule'       => $roleData['work_schedule'] ?? null,
-                ':status'              => $roleData['status'] ?? 'Active',
-                ':office_address'      => $roleData['office_address'] ?? null,
-                ':whatsapp_number'     => $roleData['whatsapp_number'] ?? null,
-                ':area_of_operation'   => $roleData['area_of_operation'] ?? null,
-                ':bio'                 => $roleData['bio'] ?? null,
+                ':nic'                 => $agentData['nic'] ?? null,
+                ':agency'              => $agentData['agency'] ?? null,
+                ':position'            => $agentData['position'] ?? null,
+                ':years_of_experience' => $agentData['years_of_experience'] ?? null,
+                ':work_schedule'       => $agentData['work_schedule'] ?? null,
+                ':status'              => $agentData['status'] ?? 'Active',
+                ':office_address'      => $agentData['office_address'] ?? null,
+                ':whatsapp_number'     => $agentData['whatsapp_number'] ?? null,
+                ':area_of_operation'   => $agentData['area_of_operation'] ?? null,
+                ':bio'                 => $agentData['bio'] ?? null,
             ]);
             $agentId = (int)$pdo->lastInsertId();
             break;
@@ -222,11 +253,11 @@ try {
             ");
             $stmt->execute([
                 ':user_id'       => $userId,
-                ':company_name'  => $roleData['company_name']  ?? null,
-                ':business_type' => $roleData['business_type'] ?? null,
-                ':tax_id'        => $roleData['tax_id']        ?? null,
-                ':phone'         => $roleData['phone']         ?? null,
-                ':address'       => $roleData['address']       ?? null,
+                ':company_name'  => $ownerData['company_name']  ?? null,
+                ':business_type' => $ownerData['business_type'] ?? null,
+                ':tax_id'        => $ownerData['tax_id']        ?? null,
+                ':phone'         => $ownerData['phone']         ?? null,
+                ':address'       => $ownerData['address']       ?? null,
                 ':profile_pic'   => $ownerProfilePicPath,
             ]);
             $ownerId = (int)$pdo->lastInsertId();
@@ -240,10 +271,10 @@ try {
             ");
             $stmt->execute([
                 ':user_id'        => $userId,
-                ':preferred_city' => $roleData['preferred_city'] ?? null,
-                ':budget_min'     => $roleData['budget_min'] ?? null,
-                ':budget_max'     => $roleData['budget_max'] ?? null,
-                ':notes'          => $roleData['notes'] ?? null,
+                ':preferred_city' => $customerData['preferred_city'] ?? null,
+                ':budget_min'     => $customerData['budget_min'] ?? null,
+                ':budget_max'     => $customerData['budget_max'] ?? null,
+                ':notes'          => $customerData['notes'] ?? null,
             ]);
             break;
     }

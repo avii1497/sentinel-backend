@@ -1,6 +1,20 @@
 <?php
-$envPath = __DIR__ . '/.env';
-if (file_exists($envPath)) {
+$envPaths = [
+    dirname(__DIR__) . '/.env',
+    __DIR__ . '/.env',
+];
+
+$loaded = [];
+foreach ($envPaths as $envPath) {
+    if (!file_exists($envPath)) {
+        continue;
+    }
+    $realPath = realpath($envPath) ?: $envPath;
+    if (isset($loaded[$realPath])) {
+        continue;
+    }
+    $loaded[$realPath] = true;
+
     foreach (file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
         $line = trim($line);
         if ($line === '' || str_starts_with($line, '#')) {

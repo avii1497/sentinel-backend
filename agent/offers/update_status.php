@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -25,16 +26,9 @@ try {
     }
 
     $input = json_decode(file_get_contents("php://input"), true);
-    $offer_id = $input['offer_id'] ?? null;
-    $action = $input['action'] ?? null;
-
-    if (!$offer_id || !is_numeric($offer_id)) {
-        throw new Exception('Invalid offer');
-    }
-
-    if (!in_array($action, ['accept', 'reject'], true)) {
-        throw new Exception('Invalid action');
-    }
+    $input = sanitize_array($input ?? []);
+    $offer_id = v_int($input['offer_id'] ?? null, 'offer id');
+    $action = v_enum($input['action'] ?? null, 'action', ['accept', 'reject']);
 
     $db = new Database();
     $pdo = $db->getPdo();

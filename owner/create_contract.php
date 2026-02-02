@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json");
 
 try {
@@ -14,11 +15,17 @@ try {
 
     // Required
     $owner_id = $_SESSION['owner_id'] ?? null;
-    $property_id = $_POST['property_id'] ?? null;
-    $agent_id = $_POST['agent_id'] ?? null;
-    $start_date = $_POST['start_date'] ?? null;
-    $end_date = $_POST['end_date'] ?? null;
-    $commission_rate = $_POST['commission_rate'] ?? null;
+    $property_id = v_int($_POST['property_id'] ?? null, 'property id');
+    $agent_id = v_int($_POST['agent_id'] ?? null, 'agent id');
+    $startDateRaw = $_POST['start_date'] ?? null;
+    if ($startDateRaw === '') $startDateRaw = null;
+    $start_date = v_date($startDateRaw, 'start date', false);
+    $endDateRaw = $_POST['end_date'] ?? null;
+    if ($endDateRaw === '') $endDateRaw = null;
+    $end_date = v_date($endDateRaw, 'end date', false);
+    $commissionRaw = $_POST['commission_rate'] ?? null;
+    if ($commissionRaw === '') $commissionRaw = null;
+    $commission_rate = v_float($commissionRaw, 'commission rate', 0, 100, false);
 
     if (!$owner_id || !$property_id || !$agent_id) {
         throw new Exception("Missing required fields.");

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -18,9 +19,9 @@ try {
 
     $input = json_decode(file_get_contents('php://input'), true);
     if (!is_array($input)) $input = [];
+    $input = sanitize_array($input);
 
-    $propertyId = (int)($input['property_id'] ?? ($_POST['property_id'] ?? 0));
-    if ($propertyId <= 0) json_error('Invalid property_id');
+    $propertyId = v_int($input['property_id'] ?? ($_POST['property_id'] ?? null), 'property id');
 
     $pdo = (new Database())->getPdo();
 

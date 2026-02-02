@@ -2,21 +2,21 @@
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../requireAdmin.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 
 try {
     $data = json_decode(file_get_contents('php://input'), true) ?? [];
-    $userId = (int)($data['user_id'] ?? 0);
-    $email = strtolower(trim((string)($data['email'] ?? '')));
-    $status = isset($data['status']) ? (int)$data['status'] : 1;
+    $data = is_array($data) ? sanitize_array($data) : [];
+    $userId = v_int($data['user_id'] ?? null, 'user id', 1, 2147483647, false) ?? 0;
+    $email = v_email($data['email'] ?? null, 'email', false);
+    $status = v_int($data['status'] ?? 1, 'status', 0, 1);
 
-    if ($userId <= 0 && $email === '') {
+    if ($userId <= 0 && ($email === null || $email === '')) {
         throw new RuntimeException('User id or email required.');
     }
-    if (!in_array($status, [0, 1], true)) {
-        throw new RuntimeException('Invalid status. Use 0 or 1.');
-    }
+    $email = $email ?? '';
 
     $db = new Database();
     $pdo = $db->getPdo();

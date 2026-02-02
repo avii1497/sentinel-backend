@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy commission update endpoint.
+// Safe to remove after: 2026-06-30 (if /owner/contracts/update_meta.php is sole updater).
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header("Content-Type: application/json");
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -13,14 +18,13 @@ if (empty($_SESSION['owner_id'])) {
 
 try {
     $input = json_decode(file_get_contents("php://input"), true);
+    $input = sanitize_array($input ?? []);
 
-    $contract_id = (int)($input['contract_id'] ?? 0);
-    $commission  = (float)($input['commission_rate'] ?? -1);
-    $end_date    = $input['end_date'] ?? null;
-
-    if (!$contract_id || $commission < 0 || $commission > 100) {
-        throw new Exception("Invalid data");
-    }
+    $contract_id = v_int($input['contract_id'] ?? null, 'contract id');
+    $commission  = v_float($input['commission_rate'] ?? null, 'commission rate', 0, 100);
+    $endDateRaw  = $input['end_date'] ?? null;
+    if ($endDateRaw === '') $endDateRaw = null;
+    $end_date = v_date($endDateRaw, 'end date', false);
 
     $pdo = (new Database())->getPdo();
 

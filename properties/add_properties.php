@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/property_amenities.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json");
 
@@ -118,27 +119,30 @@ try {
     // =========================================================
     // ✅ Inputs (MUST come before validation)
     // =========================================================
-    $requested_owner_id = isset($_POST['owner_id']) ? (int)$_POST['owner_id'] : null;
+    $requested_owner_id = isset($_POST['owner_id']) ? v_int($_POST['owner_id'], 'owner id', 1, 2147483647, false) : null;
 
     $owner_id          = $_SESSION['owner_id'] ?? null;
     $user_id           = (int)($_SESSION['user_id'] ?? 0);
 
-    $title             = trim($_POST['title'] ?? '');
-    $location          = trim($_POST['location'] ?? '');
-    $description       = trim($_POST['description'] ?? '');
-    $price             = $_POST['price'] ?? 0;
-    $latitudeRaw       = trim($_POST['latitude'] ?? '');
-    $longitudeRaw      = trim($_POST['longitude'] ?? '');
+    $title             = v_string($_POST['title'] ?? null, 'title', 200);
+    $location          = v_string($_POST['location'] ?? null, 'location', 255);
+    $description       = v_string($_POST['description'] ?? '', 'description', 2000, 0, false);
+    $price             = v_float($_POST['price'] ?? null, 'price', 0.01, 1000000000);
+    $latitudeRaw       = $_POST['latitude'] ?? null;
+    $longitudeRaw      = $_POST['longitude'] ?? null;
 
     $assigned_agent_id = $_POST['assigned_agent_id'] ?? null;
     $property_type_id  = $_POST['property_type_id'] ?? null;
     $listing_type_id   = $_POST['listing_type_id'] ?? null;
 
-    $bedrooms          = $_POST['bedrooms'] ?? 0;
-    $bathrooms         = $_POST['bathrooms'] ?? 0;
-    $area_sqft         = $_POST['area_sqft'] ?? 0;
-    $status            = $_POST['status'] ?? 'Available';
-    $vr_link           = trim($_POST['vr_link'] ?? '');
+    $bedroomsRaw       = $_POST['bedrooms'] ?? 0;
+    if ($bedroomsRaw === '') $bedroomsRaw = 0;
+    $bathroomsRaw      = $_POST['bathrooms'] ?? 0;
+    if ($bathroomsRaw === '') $bathroomsRaw = 0;
+    $areaSqftRaw       = $_POST['area_sqft'] ?? 0;
+    if ($areaSqftRaw === '') $areaSqftRaw = 0;
+    $status            = v_string($_POST['status'] ?? 'Available', 'status', 50, 0, false);
+    $vr_link           = v_string($_POST['vr_link'] ?? '', 'vr link', 500, 0, false);
 
     $is_premium_listing = (isset($_POST['is_premium_listing']) && $_POST['is_premium_listing'] === "1") ? 1 : 0;
 
@@ -173,10 +177,6 @@ try {
         throw new Exception("Location is required.");
     }
 
-    if (!is_numeric($price) || (float)$price <= 0) {
-        throw new Exception("Price must be greater than 0.");
-    }
-
     // =========================================================
     // ✅ Validate owner & owner type (only primary co-owner can add)
     // =========================================================
@@ -209,15 +209,21 @@ try {
     // =========================================================
     // ✅ Clean numeric fields
     // =========================================================
-    $assigned_agent_id = is_numeric($assigned_agent_id) ? (int)$assigned_agent_id : null;
-    $property_type_id  = is_numeric($property_type_id) ? (int)$property_type_id : null;
-    $listing_type_id   = is_numeric($listing_type_id) ? (int)$listing_type_id : null;
+    $assigned_agent_id = v_int($assigned_agent_id, 'assigned agent id', 1, 2147483647, false);
+    $property_type_id  = v_int($property_type_id, 'property type id', 1, 2147483647, false);
+    $listing_type_id   = v_int($listing_type_id, 'listing type id', 1, 2147483647, false);
 
-    $bedrooms  = is_numeric($bedrooms) ? (int)$bedrooms : 0;
-    $bathrooms = is_numeric($bathrooms) ? (int)$bathrooms : 0;
-    $area_sqft = is_numeric($area_sqft) ? (float)$area_sqft : 0;
-    $latitude  = is_numeric($latitudeRaw) ? (float)$latitudeRaw : null;
-    $longitude = is_numeric($longitudeRaw) ? (float)$longitudeRaw : null;
+    $bedrooms  = v_int($bedroomsRaw, 'bedrooms', 0, 100, true);
+    $bathrooms = v_int($bathroomsRaw, 'bathrooms', 0, 100, true);
+    $area_sqft = v_float($areaSqftRaw, 'area sqft', 0, 1000000000, true);
+    if ($latitudeRaw === '') $latitudeRaw = null;
+    if ($longitudeRaw === '') $longitudeRaw = null;
+    $latitude  = v_float($latitudeRaw, 'latitude', -90, 90, false);
+    $longitude = v_float($longitudeRaw, 'longitude', -180, 180, false);
+
+    if (($latitude === null) !== ($longitude === null)) {
+        throw new Exception("Both latitude and longitude are required when providing coordinates.");
+    }
 
     if (!is_finite($latitude) || !is_finite($longitude)) {
         $latitude = null;
@@ -365,8 +371,8 @@ try {
         is_array($_FILES['documents']['name']) &&
         isset($_POST['document_keys'], $_POST['document_labels'])
     ) {
-        $docKeys   = $_POST['document_keys'];
-        $docLabels = $_POST['document_labels'];
+        $docKeys   = is_array($_POST['document_keys']) ? $_POST['document_keys'] : [];
+        $docLabels = is_array($_POST['document_labels']) ? $_POST['document_labels'] : [];
 
         foreach ($_FILES['documents']['name'] as $index => $name) {
             if (($_FILES['documents']['error'][$index] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -401,8 +407,12 @@ try {
             }
 
             $fileUrl       = "properties/uploads/documents/" . $safeName;
-            $documentKey   = $docKeys[$index] ?? 'other';
-            $documentLabel = $docLabels[$index] ?? $originalName;
+            $documentKeyRaw = $docKeys[$index] ?? 'other';
+            $documentLabelRaw = $docLabels[$index] ?? $originalName;
+            if ($documentKeyRaw === '') $documentKeyRaw = 'other';
+            if ($documentLabelRaw === '') $documentLabelRaw = $originalName;
+            $documentKey   = v_string($documentKeyRaw, 'document key', 100, 1, true);
+            $documentLabel = v_string($documentLabelRaw, 'document label', 200, 1, true);
 
             $insertDoc = $pdo->prepare("
                 INSERT INTO property_documents 

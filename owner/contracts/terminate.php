@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header("Content-Type: application/json");
 
@@ -23,12 +24,9 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'owner') {
 
 try {
     $input = json_decode(file_get_contents("php://input"), true);
-    $contract_id = (int)($input['contract_id'] ?? 0);
-    $reason = trim($input['reason'] ?? 'Contract terminated by owner');
-
-    if (!$contract_id) {
-        throw new Exception("Contract ID required");
-    }
+    $input = sanitize_array($input ?? []);
+    $contract_id = v_int($input['contract_id'] ?? null, 'contract id');
+    $reason = v_string($input['reason'] ?? 'Contract terminated by owner', 'reason', 500, 0, false);
 
     $pdo = (new Database())->getPdo();
     $pdo->beginTransaction();

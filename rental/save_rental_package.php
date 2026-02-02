@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json");
 
 try {
@@ -17,26 +18,39 @@ try {
     if (!is_array($data)) {
         throw new Exception("Invalid JSON format.");
     }
+    $data = sanitize_array($data ?? []);
 
     // Required
-    $property_id = (int)($data["property_id"] ?? 0);
-    $rental_type = $data["rental_type"] ?? null;
-    $id          = isset($data["id"]) ? (int)$data["id"] : null;
-
-    if ($property_id <= 0 || !$rental_type) {
-        throw new Exception("Missing required fields.");
-    }
+    $property_id = v_int($data["property_id"] ?? null, 'property id');
+    $rental_type = v_enum($data["rental_type"] ?? null, 'rental type', ['short_term', 'long_term', 'corporate', 'hotel']);
+    $id          = v_int($data["id"] ?? null, 'id', 1, 2147483647, false);
 
     // Optional (safe defaults)
-    $is_active      = (int)($data["is_active"] ?? 0);
-    $price_daily    = $data["price_daily"] ?? null;
-    $price_nightly  = $data["price_nightly"] ?? null;
-    $price_monthly  = $data["price_monthly"] ?? null;
-    $price_yearly   = $data["price_yearly"] ?? null;
-    $min_stay_days  = $data["min_stay_days"] ?? null;
-    $max_stay_days  = $data["max_stay_days"] ?? null;
-    $max_guests     = $data["max_guests"] ?? null;
-    $notes          = $data["notes"] ?? null;
+    $is_active      = v_bool($data["is_active"] ?? 0, 'is active', false) ?? 0;
+    $priceDailyRaw  = $data["price_daily"] ?? null;
+    $priceNightRaw  = $data["price_nightly"] ?? null;
+    $priceMonthRaw  = $data["price_monthly"] ?? null;
+    $priceYearRaw   = $data["price_yearly"] ?? null;
+    $minStayRaw     = $data["min_stay_days"] ?? null;
+    $maxStayRaw     = $data["max_stay_days"] ?? null;
+    $maxGuestsRaw   = $data["max_guests"] ?? null;
+    $notes          = v_string($data["notes"] ?? '', 'notes', 2000, 0, false);
+
+    if ($priceDailyRaw === '') $priceDailyRaw = null;
+    if ($priceNightRaw === '') $priceNightRaw = null;
+    if ($priceMonthRaw === '') $priceMonthRaw = null;
+    if ($priceYearRaw === '') $priceYearRaw = null;
+    if ($minStayRaw === '') $minStayRaw = null;
+    if ($maxStayRaw === '') $maxStayRaw = null;
+    if ($maxGuestsRaw === '') $maxGuestsRaw = null;
+
+    $price_daily    = v_float($priceDailyRaw, 'price daily', 0, 1000000000, false);
+    $price_nightly  = v_float($priceNightRaw, 'price nightly', 0, 1000000000, false);
+    $price_monthly  = v_float($priceMonthRaw, 'price monthly', 0, 1000000000, false);
+    $price_yearly   = v_float($priceYearRaw, 'price yearly', 0, 1000000000, false);
+    $min_stay_days  = v_int($minStayRaw, 'min stay days', 0, 3650, false);
+    $max_stay_days  = v_int($maxStayRaw, 'max stay days', 0, 3650, false);
+    $max_guests     = v_int($maxGuestsRaw, 'max guests', 0, 1000, false);
 
     $db  = new Database();
     $pdo = $db->getPdo();

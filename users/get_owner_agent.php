@@ -1,4 +1,8 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy owner-agent lookup.
+// Safe to remove after: 2026-06-30 (if owner data is fetched elsewhere).
 // 🔧 Hide notices/warnings (so JSON stays clean)
 error_reporting(0);
 ini_set('display_errors', 0);

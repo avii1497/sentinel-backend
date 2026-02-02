@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 header('Content-Type: application/json');
 
 try {
@@ -8,11 +9,7 @@ try {
   requireCsrf();
 
   $userId = (int)$_SESSION['user_id'];
-  $propertyId = isset($_POST['property_id']) ? (int)$_POST['property_id'] : 0;
-
-  if ($propertyId <= 0) {
-    throw new Exception("Missing or invalid property_id");
-  }
+  $propertyId = v_int($_POST['property_id'] ?? null, 'property id');
 
   $db = new Database();
   $pdo = $db->getPdo();

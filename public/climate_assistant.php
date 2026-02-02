@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../cors.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -84,8 +85,11 @@ function parse_current_conditions($html) {
 
 try {
     $input = json_decode(file_get_contents("php://input"), true);
-    $region = is_array($input) && !empty($input['region']) ? trim($input['region']) : "Mauritius";
-    $focus = is_array($input) && !empty($input['focus']) ? trim($input['focus']) : "coastal risk, heat stress, and water resilience";
+    $input = sanitize_array(is_array($input) ? $input : []);
+    $region = v_string($input['region'] ?? 'Mauritius', 'region', 200, 0, false);
+    if ($region === '') $region = 'Mauritius';
+    $focus = v_string($input['focus'] ?? 'coastal risk, heat stress, and water resilience', 'focus', 500, 0, false);
+    if ($focus === '') $focus = 'coastal risk, heat stress, and water resilience';
 
     $html = fetch_html($sourceUrl);
     $documents = parse_documents($html, $sourceUrl);

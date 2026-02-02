@@ -3,24 +3,16 @@
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../requireAdmin.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
-
-if (
-    empty($data['id']) ||
-    empty($data['name']) ||
-    empty($data['icon']) ||
-    empty($data['category'])
-) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => 'All fields are required'
-    ]);
-    exit;
-}
+$data = is_array($data) ? sanitize_array($data) : [];
+$id = v_int($data['id'] ?? null, 'id');
+$name = v_string($data['name'] ?? null, 'name', 100);
+$icon = v_string($data['icon'] ?? null, 'icon', 100);
+$category = v_string($data['category'] ?? null, 'category', 100);
 
 $db = new Database();
 $pdo = $db->getPdo();
@@ -34,10 +26,10 @@ $stmt = $pdo->prepare("
 ");
 
 $stmt->execute([
-    ':id'       => $data['id'],
-    ':name'     => trim($data['name']),
-    ':icon'     => trim($data['icon']),
-    ':category' => trim($data['category']),
+    ':id'       => $id,
+    ':name'     => $name,
+    ':icon'     => $icon,
+    ':category' => $category,
 ]);
 
 echo json_encode([

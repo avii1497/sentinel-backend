@@ -1,4 +1,8 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy loan history endpoint.
+// Safe to remove after: 2026-06-30 (if no loan history UI is shipped).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 

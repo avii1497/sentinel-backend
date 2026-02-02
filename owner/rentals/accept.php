@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy rental acceptance endpoint.
+// Safe to remove after: 2026-06-30 (use /owner/rentals/list.php workflow).
 require_once __DIR__ . '/../../../cors.php';
 require_once __DIR__ . '/../../../Database.php';
+require_once __DIR__ . '/../../../lib/validation.php';
 
 header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -25,12 +30,12 @@ try {
     if (!is_array($input)) {
         $input = [];
     }
+    $input = sanitize_array($input);
 
-    $booking_id = $input['booking_id'] ?? ($_POST['booking_id'] ?? $_GET['booking_id'] ?? null);
-    if (!$booking_id || !is_numeric($booking_id)) {
-        json_error("Invalid booking_id");
-    }
-    $booking_id = (int)$booking_id;
+    $booking_id = v_int(
+        $input['booking_id'] ?? ($_POST['booking_id'] ?? $_GET['booking_id'] ?? null),
+        'booking id'
+    );
 
     // =========================
     // DB

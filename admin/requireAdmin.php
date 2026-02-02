@@ -22,16 +22,20 @@ $token = $matches[1];
 
 try {
     $decoded = verifyAdminToken($token);
-
-    if (($decoded->role ?? '') !== 'admin') {
-        throw new Exception('Invalid role');
-    }
-
 } catch (Throwable $e) {
     http_response_code(401);
     echo json_encode([
         'success' => false,
         'message' => 'Invalid or expired admin token'
+    ]);
+    exit;
+}
+
+if (($decoded->role ?? '') !== 'admin') {
+    http_response_code(403);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Admin role required'
     ]);
     exit;
 }

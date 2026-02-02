@@ -6,16 +6,19 @@ $defaultOrigins = [
     'http://localhost:3000',
     'http://localhost',
     'http://127.0.0.1',
-    'https://relaxed-tartufo-866a0b.netlify.app',
-    'https://musical-swan-291e56.netlify.app',
 ];
 
-$envOrigins = getenv('FRONTEND_ORIGINS') ?: getenv('ALLOWED_ORIGINS') ?: '';
-$extraOrigins = $envOrigins !== ''
-    ? preg_split('/\s*,\s*/', $envOrigins, -1, PREG_SPLIT_NO_EMPTY)
+$envOriginSingle = array_filter([
+    getenv('FRONTEND_URL') ?: '',
+    getenv('FRONTEND_URL_DEV') ?: '',
+]);
+
+$envOriginsList = getenv('FRONTEND_ORIGINS') ?: getenv('ALLOWED_ORIGINS') ?: '';
+$extraOrigins = $envOriginsList !== ''
+    ? preg_split('/\s*,\s*/', $envOriginsList, -1, PREG_SPLIT_NO_EMPTY)
     : [];
 
-$allowedOrigins = array_values(array_filter(array_merge($defaultOrigins, $extraOrigins)));
+$allowedOrigins = array_values(array_filter(array_merge($envOriginSingle, $extraOrigins, $defaultOrigins)));
 
 $originRaw = $_SERVER['HTTP_ORIGIN'] ?? '';
 $origin = rtrim(strtolower($originRaw), '/');
@@ -33,7 +36,7 @@ if ($isAllowedOrigin) {
 
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token, X-XSRF-Token, Accept');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token');
 header('Access-Control-Max-Age: 86400');
 
 // Cookie policy for cross-site sessions (Netlify -> Render).
@@ -61,7 +64,36 @@ session_set_cookie_params([
     'samesite' => $cookieSameSite,
 ]);
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+if ($method === 'OPTIONS') {
+    http_response_code(200);
     exit;
+}
+
+$stateChanging = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+if ($stateChanging) {
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
+    $csrfExempt = ($requestPath === '/payments/webhook.php')
+        || str_starts_with($requestPath, '/admin/');
+
+    if (!$csrfExempt) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $sessionToken = $_SESSION['csrf_token'] ?? '';
+        $headerToken = $_SERVER['HTTP_X_CSRF_TOKEN']
+            ?? $_SERVER['HTTP_X_XSRF_TOKEN']
+            ?? '';
+
+        if ($sessionToken === '' || $headerToken === '' || !hash_equals($sessionToken, $headerToken)) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'Invalid CSRF token'
+            ]);
+            exit;
+        }
+    }
 }

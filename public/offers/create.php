@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -40,18 +41,11 @@ try {
     // INPUT
     // -----------------------------
     $input = json_decode(file_get_contents("php://input"), true);
+    $input = sanitize_array($input ?? []);
 
-    $property_id = $input['property_id'] ?? null;
-    $offer_price = $input['offer_price'] ?? null;
-    $message     = $input['message'] ?? null;
-
-    if (!$property_id || !is_numeric($property_id)) {
-        throw new Exception('Invalid property');
-    }
-
-    if (!$offer_price || !is_numeric($offer_price)) {
-        throw new Exception('Invalid offer price');
-    }
+    $property_id = v_int($input['property_id'] ?? null, 'property id');
+    $offer_price = v_float($input['offer_price'] ?? null, 'offer price', 0.01, 1000000000);
+    $message     = v_string($input['message'] ?? '', 'message', 2000, 0, false);
 
     // -----------------------------
     // PROPERTY VALIDATION
@@ -114,6 +108,7 @@ try {
 
     $offer_expires_at = $input['offer_expires_at'] ?? null;
     if (!empty($offer_expires_at)) {
+        $offer_expires_at = v_string($offer_expires_at, 'offer expires at', 25, 1, true);
         $ts = strtotime($offer_expires_at);
         if ($ts === false) {
             throw new Exception('Invalid offer expiration date');

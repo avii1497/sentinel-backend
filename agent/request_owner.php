@@ -1,17 +1,14 @@
 <?php
 require_once __DIR__ . '/../cors.php'; 
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json; charset=UTF-8");
 
 try {
     $data = json_decode(file_get_contents("php://input"), true);
-    $agent_id = $data['agent_id'] ?? null;
-    $owner_id = $data['owner_id'] ?? null;
-
-    if (!$agent_id || !$owner_id) {
-        echo json_encode(["success" => false, "error" => "Missing required parameters."]);
-        exit;
-    }
+    $data = sanitize_array($data ?? []);
+    $agent_id = v_int($data['agent_id'] ?? null, 'agent id');
+    $owner_id = v_int($data['owner_id'] ?? null, 'owner id');
 
     $db = new Database();
     $pdo = $db->getPdo();

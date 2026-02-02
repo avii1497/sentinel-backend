@@ -2,23 +2,16 @@
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
 require_once __DIR__ . '/../config/jwt.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header('Content-Type: application/json');
 
 $raw = file_get_contents('php://input');
 $data = json_decode($raw, true);
+$data = is_array($data) ? sanitize_array($data) : [];
 
-if (!$data || empty($data['email']) || empty($data['password'])) {
-  http_response_code(400);
-  echo json_encode([
-    'success' => false,
-    'message' => 'Email and password required'
-  ]);
-  exit;
-}
-
-$email = trim($data['email']);
-$password = $data['password'];
+$email = v_email($data['email'] ?? null);
+$password = v_string($data['password'] ?? null, 'password', 256);
 
 $db = new Database();
 $pdo = $db->getPdo();

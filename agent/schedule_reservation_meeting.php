@@ -2,18 +2,9 @@
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/mailer.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json; charset=UTF-8");
-
-function isValidDate($date) {
-    $d = DateTime::createFromFormat('Y-m-d', $date);
-    return $d && $d->format('Y-m-d') === $date;
-}
-
-function isValidTime($time) {
-    // Accept HH:MM or HH:MM:SS
-    return (bool)preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/', $time);
-}
 
 try {
     if (session_status() === PHP_SESSION_NONE) session_start();
@@ -22,29 +13,14 @@ try {
     requireCsrf();
 
     $agent_id       = (int)($_SESSION['agent_id'] ?? 0);
-    $reservation_id = $_POST['reservation_id'] ?? null;
+    $reservation_id = v_int($_POST['reservation_id'] ?? null, 'reservation id');
 
-    $meeting_date = $_POST['meeting_date'] ?? null; // YYYY-MM-DD
-    $start_time   = $_POST['start_time'] ?? null;   // HH:MM
-    $end_time     = $_POST['end_time'] ?? null;     // HH:MM
+    $meeting_date = v_date($_POST['meeting_date'] ?? null, 'meeting date'); // YYYY-MM-DD
+    $start_time   = v_time($_POST['start_time'] ?? null, 'start time');      // HH:MM
+    $end_time     = v_time($_POST['end_time'] ?? null, 'end time');          // HH:MM
 
-    $title       = trim($_POST['title'] ?? 'Property Visit');
-    $description = trim($_POST['description'] ?? '');
-
-    if (!$reservation_id || !$meeting_date || !$start_time || !$end_time) {
-        throw new Exception("Missing required fields.");
-    }
-    if (!is_numeric($reservation_id)) {
-        throw new Exception("Invalid IDs.");
-    }
-
-    // Validate formats
-    if (!isValidDate($meeting_date)) {
-        throw new Exception("Invalid meeting_date format. Use YYYY-MM-DD.");
-    }
-    if (!isValidTime($start_time) || !isValidTime($end_time)) {
-        throw new Exception("Invalid time format. Use HH:MM.");
-    }
+    $title       = v_string($_POST['title'] ?? 'Property Visit', 'title', 200, 0, false);
+    $description = v_string($_POST['description'] ?? '', 'description', 2000, 0, false);
 
     // Normalize times to HH:MM:SS for safe comparisons + DB insert
     if (strlen($start_time) === 5) $start_time .= ":00";

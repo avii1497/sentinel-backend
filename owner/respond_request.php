@@ -2,16 +2,13 @@
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/mailer.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json; charset=UTF-8");
 
 $data = json_decode(file_get_contents("php://input"), true);
-$link_id = $data['link_id'] ?? null;
-$status = $data['status'] ?? null;
-
-if (!$link_id || !in_array($status, ['Accepted', 'Declined'])) {
-    echo json_encode(["success" => false, "error" => "Invalid or missing parameters"]);
-    exit;
-}
+$data = sanitize_array($data ?? []);
+$link_id = v_int($data['link_id'] ?? null, 'link id');
+$status = v_enum($data['status'] ?? null, 'status', ['Accepted', 'Declined']);
 
 try {
     $db = new Database();

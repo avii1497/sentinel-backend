@@ -1,4 +1,8 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Local admin bootstrap utility.
+// Safe to remove after: 2026-06-30 (once bootstrap process is documented elsewhere).
 require_once __DIR__ . '/../Database.php';
 
 if (($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? '') !== 'local') {
@@ -11,8 +15,14 @@ if (($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? '') !== 'local') {
 $pdo = (new Database())->getPdo();
 
 // 1) choose the email + password you want
-$email = 'admin@sentinel.com';
-$newPassword = 'Admin123!';
+$email = $_ENV['ADMIN_BOOTSTRAP_EMAIL'] ?? getenv('ADMIN_BOOTSTRAP_EMAIL') ?? '';
+$newPassword = $_ENV['ADMIN_BOOTSTRAP_PASSWORD'] ?? getenv('ADMIN_BOOTSTRAP_PASSWORD') ?? '';
+
+if ($email === '' || $newPassword === '') {
+    http_response_code(500);
+    echo 'Missing ADMIN_BOOTSTRAP_EMAIL or ADMIN_BOOTSTRAP_PASSWORD';
+    exit;
+}
 
 // 2) hash password using PHP
 $hash = password_hash($newPassword, PASSWORD_DEFAULT);

@@ -1,4 +1,8 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy sales invoice endpoint.
+// Safe to remove after: 2026-06-30 (if no sales flow uses it).
 require_once __DIR__ . '/../Database.php';
 
 $sale_id = $_GET['sale_id'] ?? null;

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json");
 
 try {
@@ -8,8 +9,8 @@ try {
     requireRole('agent');
     requireCsrf();
 
-    $conversation_id = $_POST['conversation_id'] ?? null;
-    $message_text    = trim($_POST['message_text'] ?? "");
+    $conversation_id = v_int($_POST['conversation_id'] ?? null, 'conversation id');
+    $message_text    = v_string($_POST['message_text'] ?? null, 'message text', 4000);
 
     $agent_id = $_SESSION['agent_id'] ?? null;
     if (!$agent_id) {
@@ -18,7 +19,7 @@ try {
         $agent_id = $stmt->fetchColumn();
     }
 
-    if (!$agent_id || !$conversation_id || !$message_text) {
+    if (!$agent_id) {
         throw new Exception("Missing required fields: agent_id, conversation_id, or message_text.");
     }
 

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json");
 
 try {
@@ -17,19 +18,16 @@ try {
     if (!$input) {
         throw new Exception("Invalid JSON body.");
     }
+    $input = sanitize_array($input ?? []);
 
-    $contract_id   = isset($input['contract_id']) ? (int)$input['contract_id'] : 0;
+    $contract_id   = v_int($input['contract_id'] ?? null, 'contract id');
     $role = $_SESSION['role'] ?? '';
     if (!in_array($role, ['owner', 'agent'], true)) {
         throw new Exception("Unauthorized signer role.");
     }
     $signer_type = $role;
     $signer_id = $role === 'owner' ? ($_SESSION['owner_id'] ?? null) : ($_SESSION['agent_id'] ?? null);
-    $signatureData = $input['signature_data'] ?? null;
-
-    if (!$contract_id || !$signatureData) {
-        throw new Exception("Missing required fields.");
-    }
+    $signatureData = v_string($input['signature_data'] ?? null, 'signature data', 5000000);
 
     $pdo = (new Database())->getPdo();
 

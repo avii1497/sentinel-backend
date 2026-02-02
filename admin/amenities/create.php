@@ -2,22 +2,15 @@
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../requireAdmin.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-$name     = trim($data['name'] ?? '');
-$icon     = trim($data['icon'] ?? '');
-$category = trim($data['category'] ?? '');
-
-if (!$name || !$category) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Name and category are required'
-    ]);
-    exit;
-}
+$data = is_array($data) ? sanitize_array($data) : [];
+$name = v_string($data['name'] ?? null, 'name', 100);
+$category = v_string($data['category'] ?? null, 'category', 100);
+$icon = v_string($data['icon'] ?? null, 'icon', 100, 0, false);
 
 $db = new Database();
 $pdo = $db->getPdo();

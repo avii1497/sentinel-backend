@@ -1,4 +1,8 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy rental upcoming endpoint.
+// Safe to remove after: 2026-06-30 (use /owner/rentals/list.php?stage=upcoming).
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/owner_guard.php';
 

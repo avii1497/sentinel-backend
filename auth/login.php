@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -20,22 +21,14 @@ if (session_status() === PHP_SESSION_NONE) {
 try {
     $db = new Database();
 
-   $payload = $_POST;
-if (empty($payload)) {
-    $payload = json_decode(file_get_contents('php://input'), true) ?? [];
-}
-
-$email = strtolower(trim((string)($payload['email'] ?? '')));
-$password = (string)($payload['password'] ?? '');
-
-    // === Validate Inputs ===
-    if (!$email || !$password) {
-        throw new RuntimeException('Please enter both email and password.');
+    $payload = $_POST;
+    if (empty($payload)) {
+        $payload = json_decode(file_get_contents('php://input'), true) ?? [];
     }
+    $payload = sanitize_array($payload ?? []);
 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        throw new RuntimeException('Invalid email format.');
-    }
+    $email = v_email($payload['email'] ?? null, 'email');
+    $password = v_string($payload['password'] ?? null, 'password', 256);
 
     // === Fetch user by email ===
     $user = $db->getUserByEmail($email);

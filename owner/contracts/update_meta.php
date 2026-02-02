@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
+require_once __DIR__ . '/../../lib/validation.php';
 
 header("Content-Type: application/json");
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -13,14 +14,15 @@ if (empty($_SESSION['owner_id'])) {
 
 try {
     $input = json_decode(file_get_contents("php://input"), true);
+    $input = sanitize_array($input ?? []);
 
-    $contract_id = (int)($input['contract_id'] ?? 0);
-    $commission  = isset($input['commission_rate']) ? (float)$input['commission_rate'] : null;
-    $end_date    = $input['end_date'] ?? null;
-
-    if (!$contract_id) {
-        throw new Exception("Contract ID required");
-    }
+    $contract_id = v_int($input['contract_id'] ?? null, 'contract id');
+    $commissionRaw = $input['commission_rate'] ?? null;
+    if ($commissionRaw === '') $commissionRaw = null;
+    $commission = v_float($commissionRaw, 'commission rate', 0, 100, false);
+    $endDateRaw = $input['end_date'] ?? null;
+    if ($endDateRaw === '') $endDateRaw = null;
+    $end_date = v_date($endDateRaw, 'end date', false);
 
     $pdo = (new Database())->getPdo();
 

@@ -2,25 +2,16 @@
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/mailer.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 
-$owner_id   = $_POST['owner_id'] ?? null;
-$meeting_id = $_POST['meeting_id'] ?? null;
-$new_date   = $_POST['meeting_date'] ?? null;
-$new_start  = $_POST['start_time'] ?? null;
-$new_end    = $_POST['end_time'] ?? null;
-$note       = trim($_POST['note'] ?? "");
-
-if (!$owner_id || !$meeting_id || !$new_date || !$new_start || !$new_end) {
-    echo json_encode(["success" => false, "error" => "Missing required fields"]);
-    exit;
-}
-
-if (!is_numeric($owner_id) || !is_numeric($meeting_id)) {
-    echo json_encode(["success" => false, "error" => "Invalid IDs"]);
-    exit;
-}
+$owner_id   = v_int($_POST['owner_id'] ?? null, 'owner id');
+$meeting_id = v_int($_POST['meeting_id'] ?? null, 'meeting id');
+$new_date   = v_date($_POST['meeting_date'] ?? null, 'meeting date');
+$new_start  = v_time($_POST['start_time'] ?? null, 'start time');
+$new_end    = v_time($_POST['end_time'] ?? null, 'end time');
+$note       = v_string($_POST['note'] ?? '', 'note', 500, 0, false);
 
 try {
     $pdo = (new Database())->getPdo();

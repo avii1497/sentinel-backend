@@ -1,4 +1,8 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy rental settings fetch.
+// Safe to remove after: 2026-06-30 (rental settings now use /rental/get_rental_settings.php).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
 header('Content-Type: application/json');

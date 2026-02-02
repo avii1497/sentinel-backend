@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header('Content-Type: application/json');
 
 try {
@@ -9,9 +10,10 @@ try {
     requireCsrf();
 
     $data = json_decode(file_get_contents("php://input"), true);
+    $data = sanitize_array($data ?? []);
 
-    $propertyId = (int)($data['property_id'] ?? 0);
-    $requested_owner_id = (int)($data['owner_id'] ?? 0);
+    $propertyId = v_int($data['property_id'] ?? null, 'property id');
+    $requested_owner_id = v_int($data['owner_id'] ?? null, 'owner id', 1, 2147483647, false) ?? 0;
     $owner_id   = $_SESSION['owner_id'] ?? null;
 
     if ($propertyId <= 0)  throw new Exception("Invalid property_id");

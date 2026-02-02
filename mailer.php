@@ -9,21 +9,25 @@ function sendMail($to, $subject, $body)
     $mail = new PHPMailer(true);
 
     try {
+        $cfg = require __DIR__ . '/config/mail.php';
+
         // =============================
         // SMTP SETTINGS
         // =============================
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';  
+        $mail->Host       = $cfg["host"];
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'sentinelproperty8@gmail.com';
-        $mail->Password   = 'elwp ysra opyf evdx'; 
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
+        $mail->Username   = $cfg["username"];
+        $mail->Password   = $cfg["password"];
+        $mail->SMTPSecure = $cfg["secure"] === "ssl"
+            ? PHPMailer::ENCRYPTION_SMTPS
+            : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = (int)$cfg["port"];
 
         // =============================
         // EMAIL SETTINGS
         // =============================
-        $mail->setFrom('sentinelproperty8@gmail.com', 'Sentinel');
+        $mail->setFrom($cfg["from_email"], $cfg["from_name"]);
         $mail->addAddress($to);
 
         $mail->isHTML(true);

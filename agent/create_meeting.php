@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json");
 
 try {
@@ -12,22 +13,14 @@ try {
     requireRole('agent');
     requireCsrf();
 
-    $agent_id    = $_POST['agent_id'] ?? null;
-    $owner_id    = $_POST['owner_id'] ?? null;
-    $property_id = $_POST['property_id'] ?? null;   
-    $title       = trim($_POST['title'] ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $meeting_date = $_POST['meeting_date'] ?? null; // YYYY-MM-DD
-    $start_time   = $_POST['start_time'] ?? null;   // HH:MM
-    $end_time     = $_POST['end_time'] ?? null;     // HH:MM
-
-    if (!$owner_id || !$title || !$meeting_date || !$start_time || !$end_time) {
-        throw new Exception("Missing required fields.");
-    }
-
-    if (!is_numeric($owner_id)) {
-        throw new Exception("Invalid agent_id or owner_id.");
-    }
+    $agent_id = v_int($_POST['agent_id'] ?? null, 'agent id', 1, 2147483647, false);
+    $owner_id = v_int($_POST['owner_id'] ?? null, 'owner id');
+    $property_id = v_int($_POST['property_id'] ?? null, 'property id', 1, 2147483647, false);
+    $title = v_string($_POST['title'] ?? null, 'title', 200);
+    $description = v_string($_POST['description'] ?? null, 'description', 2000, 0, false);
+    $meeting_date = v_date($_POST['meeting_date'] ?? null, 'meeting date');
+    $start_time = v_time($_POST['start_time'] ?? null, 'start time');
+    $end_time = v_time($_POST['end_time'] ?? null, 'end time');
 
     $pdo = (new Database())->getPdo();
 

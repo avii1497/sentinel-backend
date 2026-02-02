@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy contract deletion endpoint.
+// Safe to remove after: 2026-06-30 (contracts now use /owner/contracts/terminate.php).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json");
 
 try {
@@ -9,9 +14,8 @@ try {
     requireCsrf();
 
     $data = json_decode(file_get_contents("php://input"), true);
-    $contract_id = $data['contract_id'] ?? null;
-
-    if (!$contract_id) throw new Exception("Missing contract_id.");
+    $data = sanitize_array($data ?? []);
+    $contract_id = v_int($data['contract_id'] ?? null, 'contract id');
 
     $pdo = (new Database())->getPdo();
 

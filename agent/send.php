@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -11,13 +12,9 @@ try {
         throw new Exception("Not an agent");
     }
 
-    $propertyId = (int)($_POST['property_id'] ?? 0);
-    $message    = trim($_POST['message'] ?? '');
+    $propertyId = v_int($_POST['property_id'] ?? null, 'property id');
+    $message    = v_string($_POST['message'] ?? null, 'message', 2000);
     $agentId    = (int)$_SESSION['agent_id'];
-
-    if ($propertyId <= 0 || $message === '') {
-        throw new Exception("Invalid input");
-    }
 
     $db  = new Database();
     $pdo = $db->getPdo();

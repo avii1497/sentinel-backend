@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy agent contract signing flow.
+// Safe to remove after: 2026-06-30 (confirm contract signing is owner-only).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -14,11 +19,7 @@ try {
     requireCsrf();
 
     $agent_id    = $_SESSION['agent_id'] ?? null;
-    $contract_id = $_POST['contract_id'] ?? null;
-
-    if (!$contract_id || !is_numeric($contract_id)) {
-        throw new Exception("Missing or invalid contract_id");
-    }
+    $contract_id = v_int($_POST['contract_id'] ?? null, 'contract id');
     if (empty($_FILES['signature']['tmp_name'])) {
         throw new Exception("Signature file is required");
     }

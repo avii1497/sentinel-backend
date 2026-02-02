@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -30,27 +31,25 @@ try {
     if (!is_array($input)) {
         throw new RuntimeException("Invalid JSON payload.");
     }
+    $input = sanitize_array($input);
 
-    $price = parse_number($input['price'] ?? null);
-    $downPayment = parse_number($input['down_payment'] ?? 0);
-    $interestRate = parse_number($input['interest_rate'] ?? null); // annual %
+    $price = v_float(parse_number($input['price'] ?? null), 'price', 0.01, 1000000000);
+    $downPayment = v_float(parse_number($input['down_payment'] ?? 0), 'down payment', 0, 1000000000, false);
+    $interestRate = v_float(parse_number($input['interest_rate'] ?? null), 'interest rate', 0, 100, true); // annual %
     $termYears = parse_number($input['loan_term_years'] ?? null);
     $termMonths = parse_number($input['loan_term_months'] ?? null);
-    $propertyId = isset($input['property_id']) ? (int) $input['property_id'] : null;
-    $loanProductId = isset($input['loan_product_id']) ? (int) $input['loan_product_id'] : null;
-    $save = !empty($input['save']);
+    $propertyId = v_int($input['property_id'] ?? null, 'property id', 1, 2147483647, false);
+    $loanProductId = v_int($input['loan_product_id'] ?? null, 'loan product id', 1, 2147483647, false);
+    $save = v_bool($input['save'] ?? 0, 'save', false) ?? 0;
 
-    if ($price === null || $price <= 0) {
-        throw new RuntimeException("Property price is required.");
-    }
-    if ($interestRate === null || $interestRate < 0) {
-        throw new RuntimeException("Interest rate is required.");
-    }
     if ($termMonths === null) {
-        if ($termYears === null || $termYears <= 0) {
+        if ($termYears === null) {
             throw new RuntimeException("Loan term is required.");
         }
+        $termYears = v_int($termYears, 'loan term years', 1, 100);
         $termMonths = $termYears * 12;
+    } else {
+        $termMonths = v_int($termMonths, 'loan term months', 1, 1200);
     }
 
     $principal = $price - ($downPayment ?? 0);

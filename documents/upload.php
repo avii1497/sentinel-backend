@@ -1,6 +1,11 @@
 <?php
+// [UNUSED]
+// Reason: Not referenced by current frontend.
+// Planned feature or legacy: Legacy document upload endpoint.
+// Safe to remove after: 2026-06-30 (client uploads now use /public/documents/*).
 require_once __DIR__ . '/../cors.php';
 require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
@@ -11,11 +16,11 @@ try {
     requireRole(['owner', 'customer']);
     requireCsrf();
 
-    $property_id = $_POST['property_id'] ?? null;
-    $document_key = trim((string)($_POST['document_key'] ?? ''));
-    $document_label = trim((string)($_POST['document_label'] ?? ''));
+    $property_id = v_int($_POST['property_id'] ?? null, 'property id');
+    $document_key = v_string($_POST['document_key'] ?? null, 'document key', 100);
+    $document_label = v_string($_POST['document_label'] ?? null, 'document label', 200);
 
-    if (!$property_id || !is_numeric($property_id) || $document_key === '' || empty($_FILES['file'])) {
+    if (empty($_FILES['file'])) {
         throw new Exception("Missing fields");
     }
 
