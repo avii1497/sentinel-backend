@@ -73,7 +73,8 @@ if ($method === 'OPTIONS') {
 $stateChanging = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
 if ($stateChanging) {
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
-    $csrfExempt = ($requestPath === '/payments/webhook.php')
+    $csrfExempt =  $requestPath === '/payments/webhook.php'
+                    || $requestPath === '/auth/csrf.php'
         || str_starts_with($requestPath, '/admin/')
           // Auth endpoints (session bootstrap)
         || str_starts_with($requestPath, '/auth/login.php')
