@@ -10,8 +10,6 @@ use Stripe\Checkout\Session as StripeSession;
 use Stripe\Refund;
 
 header('Content-Type: application/json');
-if (session_status() === PHP_SESSION_NONE) session_start();
-
 function json_error(string $msg, int $code = 400): void {
     http_response_code($code);
     echo json_encode(['success' => false, 'error' => $msg]);

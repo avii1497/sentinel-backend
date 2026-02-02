@@ -2,39 +2,6 @@
 require_once __DIR__ . '/config/config.prod.php';
 
 /**
- * ✅ FIXED Database + Auth/CSRF helpers (deployment-safe)
- * Key fixes:
- * 1) Start session ONCE at top (prevents prod “missing session / CSRF” bugs)
- * 2) Use the $options array when creating PDO (you defined it but weren’t using it)
- * 3) Harden CSRF header parsing + JSON parsing without consuming php://input twice
- * 4) Keep your existing methods intact (no refactor of your app logic)
- */
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-/**
- * Read JSON body safely ONCE (important in prod).
- * Some endpoints might read php://input elsewhere; this avoids repeated reads.
- */
-function getJsonBody(): array {
-    static $cached = null;
-    if ($cached !== null) return $cached;
-
-    $ct = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
-    if ($ct && stripos($ct, 'application/json') !== false) {
-        $raw = file_get_contents('php://input');
-        $decoded = json_decode($raw, true);
-        $cached = is_array($decoded) ? $decoded : [];
-        return $cached;
-    }
-
-    $cached = [];
-    return $cached;
-}
-
-/**
  * Database class with PDO connection
  * Centralized DB logic and helper methods for user roles, linking, etc.
  */
@@ -61,13 +28,7 @@ class Database {
             // ✅ FIX: actually use $options (you were ignoring it)
             $this->pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                // In prod you might want to hide the message; kept for debugging like your deployed version
-                'error'   => 'Database connection failed: ' . $e->getMessage(),
-            ]);
-            exit;
+            throw new RuntimeException('Database connection failed.', 0, $e);
         }
     }
 
@@ -303,72 +264,6 @@ class Database {
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['owner_id' => $ownerId]);
         return $stmt->fetch() ?: null;
-    }
-}
-
-/* ======================
-     AUTH GUARDS
-   ====================== */
-
-function requireLogin(): void {
-    if (empty($_SESSION['user_id'])) {
-        http_response_code(401);
-        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-        exit;
-    }
-}
-
-function requireRole(array|string $allowed): void {
-    if (empty($_SESSION['role'])) {
-        http_response_code(401);
-        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-        exit;
-    }
-    $allowed = (array)$allowed;
-    if (!in_array($_SESSION['role'], $allowed, true)) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Forbidden']);
-        exit;
-    }
-}
-
-/* ======================
-     CSRF
-   ====================== */
-
-function issueCsrfToken(): string {
-    if (!empty($_SESSION['csrf_token'])) {
-        return (string)$_SESSION['csrf_token'];
-    }
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    return $_SESSION['csrf_token'];
-}
-
-function requireCsrf(): void {
-    $sessionToken = $_SESSION['csrf_token'] ?? '';
-
-    // ✅ Accept common header variants (prod servers rename/strip headers sometimes)
-    $headerToken =
-        $_SERVER['HTTP_X_CSRF_TOKEN']
-        ?? $_SERVER['HTTP_X_XSRF_TOKEN']
-        ?? $_SERVER['HTTP_X_CSRFTOKEN']
-        ?? $_SERVER['HTTP_XSRF_TOKEN']
-        ?? '';
-
-    $postToken = $_POST['csrf_token'] ?? '';
-
-    $jsonToken = '';
-    if ($headerToken === '' && $postToken === '') {
-        $json = getJsonBody();
-        $jsonToken = is_array($json) ? ($json['csrf_token'] ?? '') : '';
-    }
-
-    $token = $headerToken ?: $postToken ?: $jsonToken;
-
-    if ($sessionToken === '' || $token === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
-        exit;
     }
 }
 

@@ -8,8 +8,6 @@ require_once __DIR__ . '/../../Database.php';
 require_once __DIR__ . '/../../lib/validation.php';
 
 header("Content-Type: application/json");
-if (session_status() === PHP_SESSION_NONE) session_start();
-
 if (empty($_SESSION['owner_id'])) {
     http_response_code(403);
     echo json_encode(["success" => false, "error" => "Unauthorized"]);

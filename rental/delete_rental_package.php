@@ -5,10 +5,7 @@ require_once __DIR__ . '/../lib/validation.php';
 header("Content-Type: application/json");
 
 try {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    requireLogin();
+requireLogin();
     requireRole('owner');
     requireCsrf();
 

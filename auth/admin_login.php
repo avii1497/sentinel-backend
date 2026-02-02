@@ -5,14 +5,6 @@ require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
 
-// Start session (once)
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.cookie_samesite', 'Lax');
-    ini_set('session.cookie_secure', '0'); // set to 1 if HTTPS
-    ini_set('session.cookie_httponly', '1');
-    session_start();
-}
-
 // 1️⃣ Try to read from POST (for Android @FormUrlEncoded)
 $email = $_POST['email'] ?? null;
 $password = $_POST['password'] ?? null;

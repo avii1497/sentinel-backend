@@ -12,9 +12,7 @@ try {
     $meeting_id = v_int($_POST['meeting_id'] ?? null, 'meeting id');
     $status     = v_enum($_POST['status'] ?? null, 'status', ['accepted','declined','cancelled','completed']);
 
-    if (session_status() === PHP_SESSION_NONE) session_start();
-
-    requireLogin();
+requireLogin();
     requireRole('owner');
     requireCsrf();
 

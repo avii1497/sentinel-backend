@@ -4,11 +4,7 @@ require_once __DIR__ . '/../Database.php';
 header("Content-Type: application/json");
 
 try {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    requireLogin();
+requireLogin();
     requireRole('owner');
 
     $pdo = (new Database())->getPdo();

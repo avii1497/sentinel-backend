@@ -11,10 +11,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 // Inline auth (NO auth guard)
 if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'owner') {
     http_response_code(403);

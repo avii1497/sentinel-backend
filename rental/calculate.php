@@ -8,8 +8,6 @@ require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../lib/validation.php';
 
 header('Content-Type: application/json');
-session_start();
-
 try {
     if (empty($_SESSION['user_id'])) {
         http_response_code(401);

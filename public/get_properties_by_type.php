@@ -16,9 +16,7 @@ function base_url(): string {
 }
 
 try {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-
-    $pdo = (new Database())->getPdo();
+$pdo = (new Database())->getPdo();
 
     // Premium gating
     $sessionRole = strtolower($_SESSION['role'] ?? '');

@@ -5,10 +5,6 @@ require_once __DIR__ . '/../../Database.php';
 header('Content-Type: application/json');
 
 // ✅ ALWAYS start session before accessing $_SESSION
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 try {
     requireLogin();
     requireRole('agent');

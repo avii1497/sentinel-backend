@@ -14,10 +14,6 @@ function getClientIp(): string {
     return $_SERVER['REMOTE_ADDR'] ?? '';
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 try {
     $db = new Database();
 

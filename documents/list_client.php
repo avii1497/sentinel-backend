@@ -4,8 +4,6 @@ require_once __DIR__ . '/../Database.php';
 
 header('Content-Type: application/json');
 
-if (session_status() === PHP_SESSION_NONE) session_start();
-
 try {
     // ✅ Client only
     if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['customer', 'premium_customer'])) {

@@ -4,7 +4,6 @@ require_once __DIR__ . '/../Database.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 
-if (session_status() === PHP_SESSION_NONE) session_start();
 requireLogin();
 requireRole('agent');
 

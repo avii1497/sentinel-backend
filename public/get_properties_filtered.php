@@ -5,11 +5,7 @@ require_once __DIR__ . '/../Database.php';
 header("Content-Type: application/json");
 
 try {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    $pdo = (new Database())->getPdo();
+$pdo = (new Database())->getPdo();
 
     $sessionRole = strtolower($_SESSION['role'] ?? '');
     $isPremiumViewer = ($sessionRole === 'premium_customer') || ((int)($_SESSION['is_premium'] ?? 0) === 1);

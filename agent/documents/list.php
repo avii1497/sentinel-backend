@@ -3,8 +3,6 @@ require_once __DIR__ . '/../../cors.php';
 require_once __DIR__ . '/../../Database.php';
 
 header("Content-Type: application/json");
-if (session_status() === PHP_SESSION_NONE) session_start();
-
 try {
     if (($_SESSION['role'] ?? '') !== 'agent') {
         throw new Exception("Unauthorized");

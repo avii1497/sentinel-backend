@@ -3,10 +3,7 @@ require_once __DIR__ . '/../Database.php';
 header('Content-Type: application/json');
 
 try {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'agent') {
+if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'agent') {
         http_response_code(403);
         echo json_encode([
             "success" => false,

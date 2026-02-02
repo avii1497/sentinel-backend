@@ -10,10 +10,6 @@ use Stripe\Checkout\Session;
 
 header("Content-Type: application/json");
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 try {
     if (
         empty($_SESSION['user_id']) ||
