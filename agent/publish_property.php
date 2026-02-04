@@ -21,28 +21,57 @@ try {
         throw new Exception("Property not found");
     }
     
-// 🔒 REQUIRED OWNER DOCUMENTS BEFORE PUBLISH
-$requiredDocs = [
-    'title_deed',
-    'land_survey'
-];
+    // 🔒 REQUIRED OWNER DOCUMENTS BEFORE PUBLISH (by property type)
+    $propStmt = $pdo->prepare("SELECT property_type_id FROM properties WHERE id = ?");
+    $propStmt->execute([$property_id]);
+    $propMeta = $propStmt->fetch(PDO::FETCH_ASSOC);
+    $propertyTypeId = (int)($propMeta['property_type_id'] ?? 0);
 
-$docStmt = $pdo->prepare("
-    SELECT document_key
-    FROM property_documents
-    WHERE property_id = ?
-      AND uploaded_by = 'owner'
-");
-$docStmt->execute([$property_id]);
-$uploadedDocs = $docStmt->fetchAll(PDO::FETCH_COLUMN);
+    $requiredStmt = $pdo->prepare("
+        SELECT document_key
+        FROM property_required_documents
+        WHERE property_type_id = ?
+          AND is_mandatory = 1
+    ");
+    $requiredStmt->execute([$propertyTypeId]);
+    $requiredDocs = $requiredStmt->fetchAll(PDO::FETCH_COLUMN);
 
-foreach ($requiredDocs as $docKey) {
-    if (!in_array($docKey, $uploadedDocs)) {
-        throw new Exception(
-            "Cannot publish property. Missing required legal document: " . $docKey
-        );
+    if (!empty($requiredDocs)) {
+        $docStmt = $pdo->prepare("
+            SELECT document_key, document_label, verified_by_agent
+            FROM property_documents
+            WHERE property_id = ?
+              AND uploaded_by = 'owner'
+        ");
+        $docStmt->execute([$property_id]);
+        $uploaded = $docStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $normalize = static function (?string $value): string {
+            $value = strtolower(trim((string)$value));
+            $value = preg_replace('/[^a-z0-9]+/', '_', $value);
+            return trim($value, '_');
+        };
+
+        $uploadedKeys = [];
+        foreach ($uploaded as $row) {
+            $key = $normalize($row['document_key'] ?? '');
+            $label = $normalize($row['document_label'] ?? '');
+            if ($key !== '') $uploadedKeys[] = $key;
+            if ($label !== '') $uploadedKeys[] = $label;
+        }
+
+        foreach ($requiredDocs as $docKey) {
+            $req = $normalize($docKey);
+            if ($req === '') {
+                continue;
+            }
+            if (!in_array($req, $uploadedKeys, true)) {
+                throw new Exception(
+                    "Cannot publish property. Missing required legal document: " . $docKey
+                );
+            }
+        }
     }
-}
 
     if ((int)$property["is_published"] !== 1) {
         // ✅ Publish property

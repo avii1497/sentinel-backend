@@ -79,7 +79,7 @@ $prop = $checkProperty->fetch(PDO::FETCH_ASSOC);
     $bedrooms = v_int($bedroomsRaw, 'bedrooms', 0, 100, true);
     $bathrooms = v_int($bathroomsRaw, 'bathrooms', 0, 100, true);
     $area_sqft = v_float($areaSqftRaw, 'area sqft', 0, 1000000000, true);
-    $status = v_string($_POST['status'] ?? 'Available', 'status', 50, 0, false);
+    $propertyStatus = v_string($_POST['status'] ?? 'Available', 'status', 50, 0, false);
     $vr_link = v_string($_POST['vr_link'] ?? '', 'vr link', 500, 0, false);
 
     if ($title === '') {
@@ -159,9 +159,9 @@ if ($currentListingType === 2) {
             LIMIT 1
         ");
         $linkCheck->execute([$owner_id, $assigned_agent_id]);
-        $status = $linkCheck->fetchColumn();
+        $linkStatus = $linkCheck->fetchColumn();
 
-        if ($status !== "Accepted") {
+        if ($linkStatus !== "Accepted") {
             throw new Exception("This agent is NOT an accepted collaborator. Assign a valid agent.");
         }
     }
@@ -234,7 +234,7 @@ if ($currentListingType === 2) {
         ':bedrooms'          => $bedrooms,
         ':bathrooms'         => $bathrooms,
         ':area_sqft'         => $area_sqft,
-        ':status'            => $status,
+        ':status'            => $propertyStatus,
         ':vr_link'           => $vr_link === '' ? null : $vr_link,
         ':model_3d_url'      => $modelPath,
         ':image_url'         => $mainImage,

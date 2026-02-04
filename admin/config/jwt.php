@@ -6,16 +6,16 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-/* ==========================
+/* 
    ADMIN JWT CONFIG
-========================== */
+ */
 
 define('ADMIN_JWT_SECRET', $_ENV['ADMIN_JWT_SECRET'] ?? getenv('ADMIN_JWT_SECRET') ?? '');
 define('ADMIN_JWT_TTL', (int)(($_ENV['ADMIN_JWT_TTL'] ?? getenv('ADMIN_JWT_TTL') ?? (60 * 60 * 6)))); // 6 hours
 
-/* ==========================
+/* 
    TOKEN CREATION
-========================== */
+ */
 
 function createAdminToken(array $admin): string
 {
@@ -30,9 +30,9 @@ function createAdminToken(array $admin): string
     return JWT::encode($payload, ADMIN_JWT_SECRET, 'HS256');
 }
 
-/* ==========================
+/* 
    TOKEN VERIFICATION
-========================== */
+ */
 
 function verifyAdminToken(string $token): object
 {

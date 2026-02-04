@@ -90,14 +90,22 @@ if (session_status() === PHP_SESSION_NONE) {
 $stateChanging = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
 if ($stateChanging) {
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
-    $csrfExempt =  $requestPath === '/payments/webhook.php'
-                    || $requestPath === '/auth/csrf.php'
-        || str_starts_with($requestPath, '/admin/')
+    $requestPathNormalized = $requestPath;
+    if (stripos($requestPathNormalized, '/sentinel-backend/') === 0) {
+        $requestPathNormalized = substr($requestPathNormalized, strlen('/sentinel-backend'));
+        if ($requestPathNormalized === '') {
+            $requestPathNormalized = '/';
+        }
+    }
+
+    $csrfExempt =  $requestPathNormalized === '/payments/webhook.php'
+                    || $requestPathNormalized === '/auth/csrf.php'
+        || str_starts_with($requestPathNormalized, '/admin/')
           // Auth endpoints (session bootstrap)
-        || str_starts_with($requestPath, '/auth/login.php')
-        || str_starts_with($requestPath, '/auth/register.php')
-        || str_starts_with($requestPath, '/auth/reset_password.php')
-        || str_starts_with($requestPath, '/auth/admin_login.php');
+        || str_starts_with($requestPathNormalized, '/auth/login.php')
+        || str_starts_with($requestPathNormalized, '/auth/register.php')
+        || str_starts_with($requestPathNormalized, '/auth/reset_password.php')
+        || str_starts_with($requestPathNormalized, '/auth/admin_login.php');
 
     if (!$csrfExempt) {
         $sessionToken = $_SESSION['csrf_token'] ?? '';

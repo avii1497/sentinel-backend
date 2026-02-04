@@ -36,8 +36,8 @@ try {
     }
     $roleData = sanitize_array($roleData ?? []);
 
-    // Premium customer removed from registration
-    $validRoles = ['customer', 'owner', 'agent']; // CHANGED
+    
+    $validRoles = ['customer', 'owner', 'agent']; 
     $role = v_enum($role, 'role', $validRoles);
 
     // Duplicate email

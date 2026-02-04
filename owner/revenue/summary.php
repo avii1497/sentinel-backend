@@ -150,23 +150,30 @@ try {
                    COALESCE(SUM(rb.refund_amount), 0) AS total
             FROM rental_bookings_backup rb
             JOIN properties p ON p.id = rb.property_id
-            WHERE p.owner_id = :owner_id
+            WHERE p.owner_id = :owner_id_rb
               AND rb.refund_status IN ('refunded','approved')
-              AND COALESCE(rb.refunded_at, rb.cancelled_at, rb.created_at) BETWEEN :from AND :to
+              AND COALESCE(rb.refunded_at, rb.cancelled_at, rb.created_at) BETWEEN :from_rb AND :to_rb
             GROUP BY ym
             UNION ALL
             SELECT DATE_FORMAT(COALESCE(pr.refunded_at, pr.cancelled_at, pr.created_at), '%Y-%m') AS ym,
                    COALESCE(SUM(pr.refund_amount), 0) AS total
             FROM property_reservations pr
             JOIN properties p ON p.id = pr.property_id
-            WHERE p.owner_id = :owner_id
+            WHERE p.owner_id = :owner_id_pr
               AND pr.refund_status IN ('approved','processed')
-              AND COALESCE(pr.refunded_at, pr.cancelled_at, pr.created_at) BETWEEN :from AND :to
+              AND COALESCE(pr.refunded_at, pr.cancelled_at, pr.created_at) BETWEEN :from_pr AND :to_pr
             GROUP BY ym
         ) t
         GROUP BY ym
         ",
-        [':owner_id' => $OWNER_ID, ':from' => $rangeStartDate, ':to' => $rangeEndDate]
+        [
+            ':owner_id_rb' => $OWNER_ID,
+            ':from_rb' => $rangeStartDate,
+            ':to_rb' => $rangeEndDate,
+            ':owner_id_pr' => $OWNER_ID,
+            ':from_pr' => $rangeStartDate,
+            ':to_pr' => $rangeEndDate
+        ]
     );
 
     $chart = [];

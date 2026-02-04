@@ -93,6 +93,10 @@ function geocodeWithNominatim(string $query): ?array
 try {
     $pdo = (new Database())->getPdo();
 
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'];
+    $baseRoot = $protocol . $host . '/sentinel-backend/';
+
     $propertyId = isset($_GET['property_id']) ? intval($_GET['property_id']) : 0;
 
     if ($propertyId > 0) {
@@ -103,7 +107,14 @@ try {
                 location,
                 latitude,
                 longitude,
-                price
+                price,
+                (
+                    SELECT image_url
+                    FROM property_gallery
+                    WHERE property_id = properties.id
+                    ORDER BY id ASC
+                    LIMIT 1
+                ) AS first_gallery_image
             FROM properties
             WHERE id = ?
             LIMIT 1
@@ -137,6 +148,11 @@ try {
             }
         }
 
+        if (!empty($property['first_gallery_image'])) {
+            $img = $property['first_gallery_image'];
+            $property['image_url'] = (strpos($img, 'http') === 0) ? $img : $baseRoot . ltrim($img, '/');
+        }
+
         echo json_encode([
             "success" => true,
             "data" => $property
@@ -149,7 +165,14 @@ try {
                 location,
                 latitude,
                 longitude,
-                price
+                price,
+                (
+                    SELECT image_url
+                    FROM property_gallery
+                    WHERE property_id = properties.id
+                    ORDER BY id ASC
+                    LIMIT 1
+                ) AS first_gallery_image
             FROM properties
             WHERE 
                 is_published = 1
@@ -168,6 +191,14 @@ try {
 
         $stmt->execute();
         $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($properties as &$prop) {
+            if (!empty($prop['first_gallery_image'])) {
+                $img = $prop['first_gallery_image'];
+                $prop['image_url'] = (strpos($img, 'http') === 0) ? $img : $baseRoot . ltrim($img, '/');
+            }
+        }
+        unset($prop);
 
         echo json_encode([
             "success" => true,
